@@ -2,8 +2,37 @@
 # -*- coding: utf-8 -*-
 
 from standards import *
+import requests
+
+def ResponseBuilder(query,APIkey):
+    #example API call
+    #https://api.biblia.com/v1/bible/content/{bible}.{outputFormat}?passage={bibleReference}&key={API key}
+    #expects the query to be in the following format KJV,John 3:16
+    if "," in query:
+        query.split(",")
+        #changes the verse selection to fit the requirements of the API
+        verse_query=str()
+        placeholder_verse_query=str(query[1])
+        for i in placeholder_verse_query:
+            if i==":":
+                verse_query=verse_query+"."
+            else:
+                verse_query=verse_query+i
+        verse_query=str.replace(" ","")
+        query[1]=verse_query
+
+        api_call='https://api.biblia.com/v1/bible/content/'+str(query[0])+'.js'+'?passage='+query[1]+'&key='+APIkey
+        api_return=requests.get(api_call)
+        return api_return.json
+    else:
+        return "malformed request. comma must go between the bible verse and book"
 
 
+    
+
+
+
+'''
 class ResponseBuilder:
     def __init__(self):
         self.__standards = {
@@ -63,3 +92,4 @@ class ResponseBuilder:
                     )
                 self.__append(self.__footer)
             return self.__text, self.__citation, self.__malformed
+'''
