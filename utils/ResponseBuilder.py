@@ -3,8 +3,22 @@
 
 from standards import *
 import requests
+import API_Keys
 
-def ResponseBuilder(query,APIkey):
+def Biblia_API_Key_Storage():
+    return API_Keys.Biblia()
+def Bible_API_Key_Storage():
+    return API_Keys.Bible()
+
+def BibleAPI_Response_Builder(query,Bible_API_Key_Storage()):
+    #place an example API call
+    # do error handling and shape the query to work with the API
+    api_call='placeholder'#concatenate a string for making the call
+    api_return=requests.get(api_call)
+        return api_return.json
+    else:
+        return "error response"#return an error response that can be handled by the actual bot
+def Biblia_Response_Builder(query,Biblia_API_Key_Storage()):
     #example API call
     #https://api.biblia.com/v1/bible/content/{bible}.{outputFormat}?passage={bibleReference}&key={API key}
     #expects the query to be in the following format KJV,John 3:16
@@ -26,9 +40,21 @@ def ResponseBuilder(query,APIkey):
         return api_return.json
     else:
         return "malformed request. comma must go between the bible verse and book"
-
-
-    
+def Final_BibleAPI_Response(JSON_input):
+    #parse the JSON
+    #turn it into a string
+    #conform properly to Reddit Markdown requirements to make it look nice
+    #add neccesary edits to comply with the API TOS
+    Final_JSON_input=str(Final_JSON_input)
+    return Final_JSON_input
+def Final_BibleAPI_Response(JSON_input):
+    #parse the JSON
+    #turn it into a string
+    #conform properly to Reddit Markdown requirements to make it look nice
+    #add neccesary edits to comply with the API TOS
+    Final_JSON_input=str(Final_JSON_input)
+    return Final_JSON_input
+      
 
 
 
