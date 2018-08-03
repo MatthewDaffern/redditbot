@@ -1,16 +1,53 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
 
-from standards import *
 import requests
 import API_Keys
-
+def comment_parser(input_string):
+    #expects the format:
+    # /u/biblebot! John 3:16 KJV
+    query=input_string.split(" ")
+    query=query[1:3]
+    Verse_Chapter=query[1]
+    Verse_Chapter=Verse_Chapter.split(":")
+    Verse_Chapter=str(Verse_Chapter[0]+"."+Verse_Chapter[1])
+    query[1]=Verse_Chapter
+    #Should now be ['John','3.16',"KJV"]
+    return query
 def Biblia_API_Key_Storage():
     return API_Keys.Biblia()
-def Bible_API_Key_Storage():
-    return API_Keys.Bible()
+def Biblia_Response_Builder(query,APIkey):
+    #example API call
+    #https://api.biblia.com/v1/bible/content/{bible}.{outputFormat}?passage={bibleReference}&key={API key}
+    #expects the query to be in the following format KJV,John,3:16
+        api_call='https://api.biblia.com/v1/bible/content/'+str(query[0])+'.js'+'?passage='+query[1]+query[2]+'&key='+APIkey
+        api_return=requests.get(api_call)
+        api_return=api_return.text
+        return api_return
+def Final_Biblia_Response(input):
+    Biblia_Response=input
+    Biblia_Response_Stripped_Front=Biblia_Response.strip('"myCallbackFunction({"text":"')
+    Biblia_Response_Stripped_Back=Biblia_Response_Stripped_Front.strip('"});')
+    Biblia_Response_Final=Biblia_Response_Stripped_Back
+    Biblia_Response_Body=Biblia_Response_Final
+    #conform properly to Reddit Markdown requirements to make it look nice
+    #add neccesary edits to comply with the API TOS
+    return Biblia_Response_Body
+def full_comment_string(input_string, Response_Body):
+    #query should be the list returned from the comment parser
+    bot_username="/u/scripturebot!"
+    converted_query=input_string.strip(bot_username)
 
-def BibleAPI_Response_Builder(query,Bible_API_Key_Storage()):
+    header=str("*"reconverted_query+"*"+"/n /n")
+    final_comment=header+Response_Body
+
+# Single Line of Biblia Backend  full_comment_string(input_string,Final_Biblia_Response(Biblia_Response_Builder(comment_parser(input_string),Biblia_API_Key_Storage())))
+# Less insane, easier to understand backend.
+# comment=comment_parser(input_string)
+# Biblia_Response=Biblia_Response_Builder(comment,Biblia_API_Key_Storage())
+# Final_Biblia_Response_String=Final_Biblia_Response(Biblia_Response)
+# returned_comment=full_comment_string(input_string,Final_Biblia_Response_String)
+def Bible_API_Key_Storage():
+    return API_Keys.BibleAPI()
+def BibleAPI_Response_Builder(query,APIKey):
     #place an example API call
     # do error handling and shape the query to work with the API
     api_call='placeholder'#concatenate a string for making the call
@@ -18,28 +55,6 @@ def BibleAPI_Response_Builder(query,Bible_API_Key_Storage()):
         return api_return.json
     else:
         return "error response"#return an error response that can be handled by the actual bot
-def Biblia_Response_Builder(query,Biblia_API_Key_Storage()):
-    #example API call
-    #https://api.biblia.com/v1/bible/content/{bible}.{outputFormat}?passage={bibleReference}&key={API key}
-    #expects the query to be in the following format KJV,John 3:16
-    if "," in query:
-        query.split(",")
-        #changes the verse selection to fit the requirements of the API
-        verse_query=str()
-        placeholder_verse_query=str(query[1])
-        for i in placeholder_verse_query:
-            if i==":":
-                verse_query=verse_query+"."
-            else:
-                verse_query=verse_query+i
-        verse_query=str.replace(" ","")
-        query[1]=verse_query
-
-        api_call='https://api.biblia.com/v1/bible/content/'+str(query[0])+'.js'+'?passage='+query[1]+'&key='+APIkey
-        api_return=requests.get(api_call)
-        return api_return.json
-    else:
-        return "malformed request. comma must go between the bible verse and book"
 def Final_BibleAPI_Response(JSON_input):
     #parse the JSON
     #turn it into a string
@@ -47,15 +62,6 @@ def Final_BibleAPI_Response(JSON_input):
     #add neccesary edits to comply with the API TOS
     Final_JSON_input=str(Final_JSON_input)
     return Final_JSON_input
-def Final_BibleAPI_Response(JSON_input):
-    #parse the JSON
-    #turn it into a string
-    #conform properly to Reddit Markdown requirements to make it look nice
-    #add neccesary edits to comply with the API TOS
-    Final_JSON_input=str(Final_JSON_input)
-    return Final_JSON_input
-      
-
 
 
 '''
