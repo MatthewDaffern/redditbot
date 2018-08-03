@@ -1,3 +1,2 @@
-test.txt
-test.keys
-*.key
+# API Keys
+keys.txt
