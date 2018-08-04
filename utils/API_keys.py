@@ -13,7 +13,7 @@ def BibleAPI():
     BibleAPIKeyFile=open('API_Keys','r+')
 	key=str()
 	for i in BibleAPIFile:
-		if  'Biblia' in str(i):
+		if  'BibleAPI' in str(i):
 			KeyTextLine=str(i)
 			KeyTextLine=KeyTextLine.split(",")
 			key=KeyTextLine[1]
