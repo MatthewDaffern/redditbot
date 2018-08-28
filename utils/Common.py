@@ -2,7 +2,15 @@
 import requests
 import API_Keys
 
-
+#Separate flow control from the lower order functions.
+#Use higher order functions for the flow control decision
+#So this means the following:
+#   Remove the !!!! flow control symbol I'm using
+#   Abstract away each API service functions into a single function for each API.
+#   This will make it easier to perform my unit testing
+#   Create a flow control function that parses the comment to decide what API service should be used
+#   Eventually operate it off a single function.
+#   Remove all global variables
 
 '''API Key Storage Functions'''
 def Biblia_API_Key_Storage():
@@ -12,7 +20,12 @@ def Biblia_API_Key_Storage():
     return API_Keys.BibleAPI()   
 
 '''Reddit Parsing Functions'''
-def comment_parser(input_string):
+def ESV_checker(input_string):
+    if "ESV" in input_string:
+        return "ESV_QUERY"
+    else:
+        return "NORMAL_QUERY"
+def comment_parser(input_string): 
     #expects the format:
     # /u/biblebot! John 3:16 KJV
     query=input_string.split(" ")
@@ -23,7 +36,6 @@ def comment_parser(input_string):
     query[1]=Verse_Chapter
     #Should now be ['John','3.16',"KJV"]
     return query
-
 '''Biblia Functions'''
 def Biblia_Text_Creator(Response_Builder):
     return Response_Builder.text
@@ -82,26 +94,16 @@ def full_comment_string(input_string, Response_Body):
     final_comment=header+Response_Body_Final+footer
     return final_comment
 
-'''Bible API Functions '''
-def BibleAPI_Response_Builder(query,APIKey):
-    #place an example API call
-    # do error handling and shape the query to work with the API
-    api_call='placeholder'#concatenate a string for making the call
-    api_return=requests.get(api_call)
-        return api_return.json
-    else:
-        return "error response"#return an error response that can be handled by the actual bot
-def Final_BibleAPI_Response(JSON_input):
-    #parse the JSON
-    #turn it into a string
-    #conform properly to Reddit Markdown requirements to make it look nice
-    #add neccesary edits to comply with the API TOS
-    Final_JSON_input=str(Final_JSON_input)
-    return Final_JSON_input
-
-
-
-
-
-
-
+'''Higher order Functions '''
+def query_wrapper(ESV_API,Biblia_API,ESV_Function,Biblia_Function,ESV_query_flag,input_string):
+    if "ESV" in ESV_query_flag:
+        final_query=ESV_Function(input_string)
+    if "ESV" not in ESV_query_flag
+        final_query=Biblia_Function(input_string)
+    return final_query
+def Biblia(API_Key,input_string):
+    #full body of code abstracted
+    return response
+def ESV(API_Key, input_string):
+    #full body of code abstracted
+    return response
