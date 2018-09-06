@@ -40,29 +40,11 @@ def ESV_Response_Builder(query,APIkey):
     esv_api_call=requests.get(url, headers=headers)
     return esv_api_call
 
-
-
     #where you last left off
 def Final_ESV_Response(input_string):
     print()
+    return ESV_Response_Body
     #fill this with more stuff
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     
 def Text_Creator(Response_Builder):
     return Response_Builder.text
@@ -125,14 +107,30 @@ def full_comment_string(input_string, Response_Body,footer_input):
 
 '''Higher order Functions '''
 def Biblia(API_Key,input_string):
-    #full body of code abstracted
+    api_call=Biblia_Response_Builder(input_string,API_Key)
+    API_Error_Handling=API_Error_Handler(api_call)
+    if 'Error' in API_Error_Handling:
+        return "API_Error_Handling"
+    Biblia_body=Final_Biblia_Response(Text_Creator(api_call))
+    response=full_comment_string(input_string, Biblia_body, Biblia_Footer())
+    lengthtest=length_checker(response)
+    if 'Error' in lengthtest:
+        return lengthtest
     return response
-def ESV(API_Key, input_string):
-    #full body of code abstracted
+def ESV(API_Key,input_string):
+    api_call=ESV_Response_Builder(input_string,API_Key)
+    API_Error_Handling=API_Error_Handler(api_call)
+    if 'Error' in API_Error_Handling:
+        return "API_Error_Handling"
+    Biblia_body=Final_ESV_Response(Text_Creator(api_call))
+    response=full_comment_string(input_string, Biblia_body, ESV_Footer())
+    lengthtest=length_checker(response)
+    if 'Error' in lengthtest:
+        return lengthtest
     return response
-def query_wrapper(ESV_API,Biblia_API,ESV_Function,Biblia_Function,ESV_query_flag,input_string):
+def query_wrapper(ESV_API_key,Biblia_API_key,ESV_Function,Biblia_Function,ESV_query_flag,input_string):
     if "ESV" in ESV_query_flag:
-        final_query=ESV(input_string)
+        final_query=ESV_Function(ESV_API_key,input_string)
     if "ESV" not in ESV_query_flag
-        final_query=Biblia(input_string)
+        final_query=Biblia_Function(Biblia_API_key,input_string)
     return final_query
