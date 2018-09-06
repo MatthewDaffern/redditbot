@@ -8,8 +8,6 @@ import API_Keys
 #   Abstract away each API service functions into a single function for each API.
 #   This will make it easier to perform my unit testing
 #   Eventually operate it off a single function.
-
-
 '''API Key Storage Functions'''
 def Biblia_API_Key_Storage():
     return API_Keys.Biblia()
@@ -38,10 +36,34 @@ def comment_parser(input_string):
 def ESV_Response_Builder(query,APIkey):
     mode='text'
     url='https://api.esv.org/v3/passage/'+mode+'/?q'+query[0]+'+'+query[1]
-    headers={'authentication':str(' Token '+' {{ '+APIkey+' }} ')}
+    headers={'authentication':str(' '+APIkey)}
     esv_api_call=requests.get(url, headers=headers)
     return esv_api_call
 
+
+
+    #where you last left off
+def Final_ESV_Response(input_string):
+    print()
+    #fill this with more stuff
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
 def Text_Creator(Response_Builder):
     return Response_Builder.text
 def Biblia_Response_Builder(query,APIkey):
@@ -51,8 +73,8 @@ def Biblia_Response_Builder(query,APIkey):
         esv_api_call='https://api.biblia.com/v1/bible/content/'+str(query[0])+'.js'+'?passage='+query[1]+query[2]+'&key='+APIkey
         biblia_api_return=requests.get(api_call)
         return biblia_api_return
-def Final_Biblia_Response(input):
-    Biblia_Response=input
+def Final_Biblia_Response(input_string):
+    Biblia_Response=input_string
     Biblia_Response_Stripped_Front=Biblia_Response.strip('"myCallbackFunction({"text":"')
     Biblia_Response_Stripped_Back=Biblia_Response_Stripped_Front.strip('"});')
     Biblia_Response_Final=Biblia_Response_Stripped_Back
@@ -92,12 +114,12 @@ def length_checker(final_comment):
     else:
         return("Success")
 '''Comment Building Functions '''
-def biblia_full_comment_string(input_string, Response_Body):
+def full_comment_string(input_string, Response_Body,footer_input):
     #input string is the string initially used to make the API call.
     bot_username="/u/scripturebot!"
     converted_query=input_string.strip(bot_username)
     header=str("*"reconverted_query+"*"+"\n \n")
-    footer=Biblia_Footer()
+    footer=footer_input
     final_comment=header+Response_Body_Final+footer
     return final_comment
 
