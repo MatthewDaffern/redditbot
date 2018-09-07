@@ -2,29 +2,47 @@
 # -*- coding: utf-8 -*-
 
 import praw
+import Common
 
-from Config import USERNAME, PASSWORD, CLIENT_ID, CLIENT_SECRET, SUBREDDITS
-from utils import ResponseBuilder
-from utils.Database import create_table, replied_to, insert
-from utils.Failable import failable
-from utils.Util import log
 
 
 def authenticate():
-    log("Authenticating...")
     reddit = praw.Reddit(username=USERNAME,
                          password=PASSWORD,
                          client_id=CLIENT_ID,
                          client_secret=CLIENT_SECRET,
-                         user_agent="StandardsBot v1.2 for reddit. /u/Nokeo08")
-    log("Authenticated as {}".format(reddit.user.me()))
+                         user_agent="Scripturebot v1.2 for reddit. /u/i_need_to_argue")
     return reddit
+def unread_generator(reddit_object):
+    inbox=reddit_object.inbox.unread()
+    return inbox
+def fullname_creator(comment_object):
+    initial_fullname=str(comment_object.fullname()):
+    initial_fullname_array=initial_fullname.split('_')
+    final_fullname=str(initial_fullname[1])
+    return final_fullname
+def reply_function(reddit_object,comment_fullname_function,unread_message,API_call_function):
+    comment_log=list()
+    for i in unread_message:
+        query=str(i)
+        response=API_call_function(query)
+        comment_fullname=comment_fullname_function(i)
+        unread_comment = reddit.comment(id=comment_fullname)
+        comment.reply(response)
+        comment_log.append(str(response))
+    return comment_log
+def the_actual_bot(authenticate,unread_generator,fullname_creator,reply_function):
+    reddit=authenticate()
+    unread=unread_generator(reddit)
+    reply_function(reddit,fullname_creator,unread,query_wrapper)
 
 
-def prepare_database():
-    create_table()
-    log("Database Ready")
 
+
+the_actual_bot()
+
+
+'''
 
 @failable
 def process_subreddit(sub, reddit, rb):
@@ -38,15 +56,20 @@ def process_subreddit(sub, reddit, rb):
                 if malformed:
                     log(comment.author.name + "submitted a malformed request. Some of all of their "
                                               "request was not fulfilled")
-
-
+from Config import USERNAME, PASSWORD, CLIENT_ID, CLIENT_SECRET, SUBREDDITS
+from utils import ResponseBuilder
+from utils.Database import create_table, replied_to, insert
+from utils.Failable import failable
+from utils.Util import log
 def main():
     prepare_database()
     reddit = authenticate()
     rb = ResponseBuilder()
     for sub in SUBREDDITS:
         process_subreddit(sub, reddit, rb)
-
-
 if __name__ == '__main__':
     main()
+def prepare_database():
+    create_table()
+    log("Database Ready")
+'''

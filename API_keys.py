@@ -8,12 +8,12 @@ def Biblia():
 			KeyTextLine=KeyTextLine.split(",")
 			key=KeyTextLine[1]
 	return key
-def BibleAPI():
+def ESV():
 	#parse the key from a text file that's in the .gitignore
-    BibleAPIKeyFile=open('API_Keys','r+')
+    ESVKeyFile=open('API_Keys','r+')
 	key=str()
-	for i in BibleAPIFile:
-		if  'BibleAPI' in str(i):
+	for i in ESVKeyFile:
+		if  'ESV' in str(i):
 			KeyTextLine=str(i)
 			KeyTextLine=KeyTextLine.split(",")
 			key=KeyTextLine[1]

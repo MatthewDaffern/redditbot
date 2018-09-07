@@ -12,15 +12,10 @@ import API_Keys
 def Biblia_API_Key_Storage():
     return API_Keys.Biblia()
 
- def Bible_API_Key_Storage():
-    return API_Keys.BibleAPI()   
+ def ESV_API_Key_Storage():
+    return API_Keys.ESV()   
 
 '''Reddit Parsing Functions'''
-def ESV_checker(input_string):
-    if "ESV" in input_string:
-        return "ESV_QUERY"
-    else:
-        return "NORMAL_QUERY"
 def comment_parser(input_string): 
     #expects the format:
     # /u/biblebot! John 3:16 KJV
@@ -106,8 +101,8 @@ def full_comment_string(input_string, Response_Body,footer_input):
     return final_comment
 
 '''Higher order Functions '''
-def Biblia(API_Key,input_string):
-    api_call=Biblia_Response_Builder(input_string,API_Key)
+def Biblia(input_string):
+    api_call=Biblia_Response_Builder(input_string,Biblia_API_Key_Storage())
     API_Error_Handling=API_Error_Handler(api_call)
     if 'Error' in API_Error_Handling:
         return "API_Error_Handling"
@@ -117,8 +112,8 @@ def Biblia(API_Key,input_string):
     if 'Error' in lengthtest:
         return lengthtest
     return response
-def ESV(API_Key,input_string):
-    api_call=ESV_Response_Builder(input_string,API_Key)
+def ESV(input_string):
+    api_call=ESV_Response_Builder(input_string,ESV_API_Key_Storage())
     API_Error_Handling=API_Error_Handler(api_call)
     if 'Error' in API_Error_Handling:
         return "API_Error_Handling"
@@ -128,9 +123,9 @@ def ESV(API_Key,input_string):
     if 'Error' in lengthtest:
         return lengthtest
     return response
-def query_wrapper(ESV_API_key,Biblia_API_key,ESV_Function,Biblia_Function,ESV_query_flag,input_string):
-    if "ESV" in ESV_query_flag:
-        final_query=ESV_Function(ESV_API_key,input_string)
-    if "ESV" not in ESV_query_flag
-        final_query=Biblia_Function(Biblia_API_key,input_string)
+def query_wrapper(input_string):
+    if "ESV" in input_string:
+        final_query=ESV(input_string)
+    if "ESV" not in input_string
+        final_query=Biblia(input_string)
     return final_query
