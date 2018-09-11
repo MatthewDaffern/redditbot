@@ -56,13 +56,13 @@ def reply_function_and_error_logging(reddit_object,
         comment_fullname = comment_fullname_function(i)
         unread_comment = reddit_object.comment(id=comment_fullname)
         if 'error' in response:
-            compliant_log1 = query+' was made at '+time()
-            compliant_log2 = 'by '+str(reddit_object.author)+' and the following error was raised'+response
-            compliant_log = compliant_log1+compliant_log2
+            compliant_log1 = query + ' was made at ' + time()
+            compliant_log2 = 'by ' + str(reddit_object.author) + ' and the following error was raised' + response
+            compliant_log = compliant_log1 + compliant_log2
             print(compliant_log)
             reply1 = 'malformed request: your request cannot be fulfilled for one or more reasons.'
             reply2 = ' the developers have been notified'
-            reply = reply1+reply2
+            reply = reply1 + reply2
             unread_comment.reply(reply)
         if 'error' not in response:
             unread_comment.reply(response)
@@ -75,3 +75,5 @@ def the_actual_bot(authentication, unread_generator_func, fullname_creator_func,
     reddit_object = authentication()
     unread = unread_generator_func(reddit_object)
     reply_function(reddit_object, fullname_creator_func, unread, query_processor)
+
+# the_actual_bot(authenticate(), unread_generator, fullname_creator, reply_function)
