@@ -28,18 +28,24 @@ def comment_parser(input_string):
     #Should now be ['John','3.16',"KJV"]
     return query
 '''Bible Functions'''
+
+
 def ESV_Response_Builder(query,APIkey):
     mode='text'
-    url='https://api.esv.org/v3/passage/'+mode+'/?q='+query[0]+'+'+query[1]
+    additional_parameters='&include-passage-references=false&include-footnotes=false&include-headings=false'
+    url='https://api.esv.org/v3/passage/'+mode+'/?q='+query[0]+'+'+query[1]+additional_parameters
     headers={'Authorization':str(' '+APIkey)}
     esv_api_call=requests.get(url, headers=headers)
     return esv_api_call
 
-    #where you last left off
 def Final_ESV_Response(input_string):
-    print()
+    removed_data=input_string.split('"passages"')
+    removed_data=removed_data[1]
+    removed_newlines=removed_data.replace('\\n','')
+    removed_utf8_characters=removed_newlines.replace('\\u201d','').replace('\\u201c','').replace('\\u2019','').replace('\\u2018','')
+    fixed_formatting=removed_utf8_characters..replace(': [" ','').replace(']}','').replace('(ESV)"','(ESV)')
+    ESV_Response_Body=fixed_formatting
     return ESV_Response_Body
-    #fill this with more stuff
     
 def Text_Creator(Response_Builder):
     return Response_Builder.text

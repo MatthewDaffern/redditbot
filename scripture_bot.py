@@ -21,15 +21,20 @@ def fullname_creator(comment_object):
     initial_fullname_array=initial_fullname.split('_')
     final_fullname=str(initial_fullname[1])
     return final_fullname
-def reply_function(reddit_object,comment_fullname_function,unread_message,API_call_function):
+def reply_function_and_error_logging(reddit_object,comment_fullname_function,unread_message,API_call_function):
     comment_log=list()
     for i in unread_message:
         query=str(i)
         response=API_call_function(query)
         comment_fullname=comment_fullname_function(i)
-        unread_comment = reddit.comment(id=comment_fullname)
-        comment.reply(response)
-        comment_log.append(str(response))
+        unread_comment=reddit_object.comment(id=comment_fullname)
+        if 'ERROR' in response:
+        	reddit_object.message()
+        	reddit.subreddit('scripturebot').message('ERROR', response+'\n \n \n'+"query processed was: "+query)
+        	unread_comment.reply('Malformed request: Your request cannot be fulfilled for one or more reasons. The developers have been notified')
+        if 'ERROR' not in response:
+	        unread_comment.reply(response)
+	        comment_log.append(str(response))
     return comment_log
 def the_actual_bot(authenticate,unread_generator,fullname_creator,reply_function):
     reddit=authenticate()
