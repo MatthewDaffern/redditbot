@@ -30,8 +30,8 @@ def comment_parser(input_string):
 '''Bible Functions'''
 def ESV_Response_Builder(query,APIkey):
     mode='text'
-    url='https://api.esv.org/v3/passage/'+mode+'/?q'+query[0]+'+'+query[1]
-    headers={'authentication':str(' '+APIkey)}
+    url='https://api.esv.org/v3/passage/'+mode+'/?q='+query[0]+'+'+query[1]
+    headers={'Authorization':str(' '+APIkey)}
     esv_api_call=requests.get(url, headers=headers)
     return esv_api_call
 
@@ -76,7 +76,7 @@ def ESV_footer():
 def API_Error_Handler(Response_Builder):
     #expects a requests object as input
     if "200" not in str(Response_Builder):
-        return "Error: One or more queries could not be handled.(API HANDLING HAS MALFUNCTIONED)"
+        return "ERROR: One or more queries could not be handled. Biblia or ESV cannot fulfill your request at this time"
     if "200" in str(Response_Builder):
         return "Success" 
 def input_sanitization(Response_Builder):
@@ -87,7 +87,7 @@ def input_sanitization(Response_Builder):
     return("Success")
 def length_checker(final_comment):
     if len(final_comment)>8000:
-        return "Error:your request could not be fulfilled to to the size constraint on reddit comments. It might be best to paste from your favorite website."
+        return "ERROR:your request could not be fulfilled because it's over 8,000 characters."
     else:
         return("Success")
 '''Comment Building Functions '''
