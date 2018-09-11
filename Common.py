@@ -1,13 +1,8 @@
 
 import requests
 import API_Keys
+from log import *
 
-#Separate flow control from the lower order functions.
-#Use higher order functions for the flow control decision
-#So this means the following:
-#   Abstract away each API service functions into a single function for each API.
-#   This will make it easier to perform my unit testing
-#   Eventually operate it off a single function.
 '''API Key Storage Functions'''
 def Biblia_API_Key_Storage():
     return API_Keys.Biblia()
@@ -35,8 +30,8 @@ def ESV_Response_Builder(query,APIkey):
     additional_parameters='&include-passage-references=false&include-footnotes=false&include-headings=false'
     url='https://api.esv.org/v3/passage/'+mode+'/?q='+query[0]+'+'+query[1]+additional_parameters
     headers={'Authorization':str(' '+APIkey)}
-    esv_api_call=requests.get(url, headers=headers)
-    return esv_api_call
+    api_call=requests.get(url, headers=headers)
+    return api_call
 
 def Final_ESV_Response(input_string):
     removed_data=input_string.split('"passages"')
@@ -53,7 +48,7 @@ def Biblia_Response_Builder(query,APIkey):
     #example API call
     #https://api.biblia.com/v1/bible/content/{bible}.{outputFormat}?passage={bibleReference}&key={API key}
     #expects the query to be in the following format KJV,John,3:16
-        esv_api_call='https://api.biblia.com/v1/bible/content/'+str(query[0])+'.js'+'?passage='+query[1]+query[2]+'&key='+APIkey
+        api_call='https://api.biblia.com/v1/bible/content/'+str(query[0])+'.js'+'?passage='+query[1]+query[2]+'&key='+APIkey
         biblia_api_return=requests.get(api_call)
         return biblia_api_return
 def Final_Biblia_Response(input_string):
@@ -107,31 +102,40 @@ def full_comment_string(input_string, Response_Body,footer_input):
     return final_comment
 
 '''Higher order Functions '''
-def Biblia(input_string):
-    api_call=Biblia_Response_Builder(input_string,Biblia_API_Key_Storage())
+def Biblia(requests_object):
+    api_call=requests_object
+    API_Response_Logger(api_call)
     API_Error_Handling=API_Error_Handler(api_call)
-    if 'Error' in API_Error_Handling:
-        return "API_Error_Handling"
+    if 'ERROR' in API_Error_Handling:
+        return API_Error_Handling
     Biblia_body=Final_Biblia_Response(Text_Creator(api_call))
     response=full_comment_string(input_string, Biblia_body, Biblia_Footer())
     lengthtest=length_checker(response)
-    if 'Error' in lengthtest:
+    if 'ERROR' in lengthtest:
         return lengthtest
     return response
-def ESV(input_string):
-    api_call=ESV_Response_Builder(input_string,ESV_API_Key_Storage())
+def ESV(requests_object):
+    api_call=requests_object
+    API_Response_Logger(api_call)
     API_Error_Handling=API_Error_Handler(api_call)
-    if 'Error' in API_Error_Handling:
-        return "API_Error_Handling"
-    Biblia_body=Final_ESV_Response(Text_Creator(api_call))
-    response=full_comment_string(input_string, Biblia_body, ESV_Footer())
+    if 'ERROR' in API_Error_Handling:
+        return API_Error_Handling
+    ESV_body=Final_ESV_Response(Text_Creator(api_call))
+    response=full_comment_string(input_string, ESV_body, ESV_Footer())
     lengthtest=length_checker(response)
-    if 'Error' in lengthtest:
+    if 'ERROR' in lengthtest:
         return lengthtest
     return response
-def query_wrapper(input_string):
+def query_processor(input_string,requests_object):   
     if "ESV" in input_string:
-        final_query=ESV(input_string)
+        final_query=ESV_Function(requests_object)
     if "ESV" not in input_string
-        final_query=Biblia(input_string)
+        final_query=Biblia_Function(requests_object)
     return final_query
+
+def requests_object_caller(input_string):
+    if "ESV" in input_string:
+        api_call=ESV_Response_Builder(comment_parser(input_string),ESV_API_Key_Storage())
+    if "ESV" not in input_string
+        api_call=Biblia_Response_Builder(comment_parser(input_string),Biblia_API_Key_Storage())
+    return api_call
