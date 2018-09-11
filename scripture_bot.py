@@ -10,7 +10,7 @@ def authenticate():
     config = open('config_file', 'r+')
     config_list = list(config.readlines())
     for i in config_list:
-        config_line = i.split(', ')
+        config_line = i.split(': ')
         if config_line[0] == 'username':
             username_var = config_line[1]
         if config_line[0] == 'password':
@@ -22,7 +22,7 @@ def authenticate():
         if config_line[0] == 'user_agent':
             user_agent_var = config_line[1]
     reddit_instance = praw.Reddit(client_id=client_id_var,
-                                  client_secred=client_secret_var,
+                                  client_secret=client_secret_var,
                                   password=password_var,
                                   user_agent=user_agent_var,
                                   username=username_var)
