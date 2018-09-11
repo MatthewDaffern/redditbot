@@ -52,5 +52,4 @@ def the_actual_bot(authenticate,unread_generator,fullname_creator,reply_function
 
 
 
-the_actual_bot()
 
