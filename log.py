@@ -27,7 +27,7 @@ def Query_Response_Logger(reddit_comment_object,requests_object,query,final_resp
 	query_owner=str(reddit_comment_object.author)
 	query=str(query)
 	response_url=str(requests_object.url)
-	response_code=str(requests_object
+	response_code=str(requests_object)
 	query_response_log_entry="scripture_bot responded to "+query_owner+" at: "+log_time+"\n"
 	query_response_log_entry=query_response_log_entry+"it used their query: "+query+"\n"+"to make a request to "+response_url+"\n"+'which responded with '+response_code+"\n"
 	query_response_log_entry="the final comment string returned was: "+'\n'+str(final_response)

@@ -1,13 +1,13 @@
 
 import requests
-import API_Keys
+import API_keys
 from log import *
 
 '''API Key Storage Functions'''
 def Biblia_API_Key_Storage():
     return API_Keys.Biblia()
 
- def ESV_API_Key_Storage():
+def ESV_API_Key_Storage():
     return API_Keys.ESV()   
 
 '''Reddit Parsing Functions'''
@@ -38,7 +38,7 @@ def Final_ESV_Response(input_string):
     removed_data=removed_data[1]
     removed_newlines=removed_data.replace('\\n','')
     removed_utf8_characters=removed_newlines.replace('\\u201d','').replace('\\u201c','').replace('\\u2019','').replace('\\u2018','')
-    fixed_formatting=removed_utf8_characters..replace(': [" ','').replace(']}','').replace('(ESV)"','(ESV)')
+    fixed_formatting=removed_utf8_characters.replace(': [" ','').replace(']}','').replace('(ESV)"','(ESV)')
     ESV_Response_Body=fixed_formatting
     return ESV_Response_Body
     
@@ -56,7 +56,7 @@ def Final_Biblia_Response(input_string):
     Biblia_Response_Stripped_Front=Biblia_Response.strip('"myCallbackFunction({"text":"')
     Biblia_Response_Stripped_Back=Biblia_Response_Stripped_Front.strip('"});')
     Biblia_Response_Final=Biblia_Response_Stripped_Back
-    Biblia_Response_Body=Biblia_Response_Final+
+    Biblia_Response_Body=Biblia_Response_Final
     return Biblia_Response_Body
 def Biblia_Footer():
     Couple_of_Spaces="\n \n"
@@ -80,12 +80,7 @@ def API_Error_Handler(Response_Builder):
         return "ERROR: One or more queries could not be handled. Biblia or ESV cannot fulfill your request at this time"
     if "200" in str(Response_Builder):
         return "Success" 
-def input_sanitization(Response_Builder):
-    forbidden_words_and_symbols_list=['(',")",";","def","return","class","exec","eval","import"]
-    for i in forbidden_words_and_symbols_list:
-        if i in str(Response_Builder):
-            return(Error: Malformed Input)
-    return("Success")
+
 def length_checker(final_comment):
     if len(final_comment)>8000:
         return "ERROR:your request could not be fulfilled because it's over 8,000 characters."
@@ -96,7 +91,7 @@ def full_comment_string(input_string, Response_Body,footer_input):
     #input string is the string initially used to make the API call.
     bot_username="/u/scripturebot!"
     converted_query=input_string.strip(bot_username)
-    header=str("*"reconverted_query+"*"+"\n \n")
+    header=str("*"+reconverted_query+"*"+"\n \n")
     footer=footer_input
     final_comment=header+Response_Body_Final+footer
     return final_comment
@@ -129,13 +124,21 @@ def ESV(requests_object):
 def query_processor(input_string,requests_object):   
     if "ESV" in input_string:
         final_query=ESV_Function(requests_object)
-    if "ESV" not in input_string
+    if "ESV" not in input_string:
         final_query=Biblia_Function(requests_object)
     return final_query
 
 def requests_object_caller(input_string):
     if "ESV" in input_string:
         api_call=ESV_Response_Builder(comment_parser(input_string),ESV_API_Key_Storage())
-    if "ESV" not in input_string
+    if "ESV" not in input_string:
         api_call=Biblia_Response_Builder(comment_parser(input_string),Biblia_API_Key_Storage())
     return api_call
+'''
+def input_sanitization(Response_Builder):
+    forbidden_words_and_symbols_list=['(',")",";","def","return","class","exec","eval","import"]
+    for i in forbidden_words_and_symbols_list:
+        if i in str(Response_Builder):
+            return('Error: Malformed Input')
+    return("Success")
+'''

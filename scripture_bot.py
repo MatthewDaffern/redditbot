@@ -22,7 +22,7 @@ def unread_generator(reddit_object):
     inbox=reddit_object.inbox.unread()
     return inbox
 def fullname_creator(comment_object):
-    initial_fullname=str(comment_object.fullname()):
+    initial_fullname=str(comment_object.fullname())
     initial_fullname_array=initial_fullname.split('_')
     final_fullname=str(initial_fullname[1])
     return final_fullname
