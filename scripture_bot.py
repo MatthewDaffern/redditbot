@@ -76,4 +76,4 @@ def the_actual_bot(authentication, unread_generator_func, fullname_creator_func,
     unread = unread_generator_func(reddit_object)
     reply_function(reddit_object, fullname_creator_func, unread, query_processor)
 
-# the_actual_bot(authenticate(), unread_generator, fullname_creator, reply_function)
+# the_actual_bot(authenticate(), unread_generator, fullname_creator, reply_function_and_error_logging)
