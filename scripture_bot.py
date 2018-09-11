@@ -1,17 +1,26 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
-
 import praw
-import Common
-
-
+from Common import *
 
 def authenticate():
+	config=open('config_file','r+')
+	config_list=list(config.readlines())
+	for i in config_list:
+		config_line=i.split(',')
+		if config_line[0]=='username':
+			USERNAME=config_line[1]
+		if config_line[0]=='password':
+			PASSWORD=config_line[1]
+		if config_line[0]=='client_id':
+			CLIENT_ID=config_line[1]
+		if config_line[0]=='client_secret':
+			CLIENT_SECRET=config_line[1]
+		if config_line[0]=='user_agent':
+			USER_AGENT=config_line[1]
     reddit = praw.Reddit(username=USERNAME,
                          password=PASSWORD,
                          client_id=CLIENT_ID,
                          client_secret=CLIENT_SECRET,
-                         user_agent="Scripturebot v1.2 for reddit. /u/i_need_to_argue")
+                         user_agent=CLIENT_AGENT)
     return reddit
 def unread_generator(reddit_object):
     inbox=reddit_object.inbox.unread()
@@ -46,35 +55,3 @@ def the_actual_bot(authenticate,unread_generator,fullname_creator,reply_function
 
 the_actual_bot()
 
-
-'''
-
-@failable
-def process_subreddit(sub, reddit, rb):
-    for comment in reddit.subreddit(sub).comments(limit=None):
-        if not replied_to(comment.id) and comment.archived is False:
-            text, citation, malformed = rb.fetch(comment.body)
-            if len(text) > 0:
-                comment.reply(text)
-                insert(comment.id, sub, comment.author.name, citation)
-                log("Responded to " + comment.author.name + " on " + sub + " with " + citation)
-                if malformed:
-                    log(comment.author.name + "submitted a malformed request. Some of all of their "
-                                              "request was not fulfilled")
-from Config import USERNAME, PASSWORD, CLIENT_ID, CLIENT_SECRET, SUBREDDITS
-from utils import ResponseBuilder
-from utils.Database import create_table, replied_to, insert
-from utils.Failable import failable
-from utils.Util import log
-def main():
-    prepare_database()
-    reddit = authenticate()
-    rb = ResponseBuilder()
-    for sub in SUBREDDITS:
-        process_subreddit(sub, reddit, rb)
-if __name__ == '__main__':
-    main()
-def prepare_database():
-    create_table()
-    log("Database Ready")
-'''
