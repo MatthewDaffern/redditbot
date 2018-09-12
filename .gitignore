@@ -1,2 +1,6 @@
 # API Keys
 keys.txt
+/.idea
+/__pycache__
+config_file
+
