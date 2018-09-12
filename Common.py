@@ -1,7 +1,16 @@
 import requests
 import log
 import api_keys
+import time
 
+
+def rate_limiter():
+    initial_time=time.time()
+    final_time=time.time()
+    time_difference=final_time-initial_time
+    while time_difference<.0625:
+        final_time=time.time()
+        time_difference=final_time-initial_time
 
 def biblia_api_key_storage():
     return api_keys.biblia()
@@ -23,45 +32,14 @@ def comment_parser(input_string):
     # should now be ['john','3.16',"kjv"]
     return query
 
-def get_bible_response_builder(query):
-    # http://getbible.net/json?passage=John%2015:25-28,%2010,%2015&version=web
-    mode = 'json'
-    version = query[2]
-    chapter_verse = query[1].replace('.', ':')
-    book = query[0]
-    url = 'http://getbible.net/'+mode+'?passage='+book+'%20'+chapter_verse+',%2010,%2015&version='+version
-    api_call = requests.get(url)
-    return api_call
-def final_get_bible_response(input_string):
-    list_to_iterate = input_string.split('"verse":"')
-    list_without_beginning_statistics_to_iterate=list()
-    for i in list_to_iterate:
-        if 'book' not in i:
-            list_without_beginning_statistics_to_iterate.append(i)
-    get_bible_response_body = str()
-    for i in list_without_beginning_statistics_to_iterate:
-        temp_list = i.split('\r\n')
-        verse_to_add = temp_list
-        get_bible_response_body=get_bible_response_body+verse_to_add[0]
-    return get_bible_response_body
-
 def esv_response_builder(query, api_key):
+    rate_limiter()
     mode = 'text'
     additional_parameters = '&include-passage-references=false&include-footnotes=false&include-headings=false'
     url = 'https://api.esv.org/v3/passage/'+mode+'/?q='+query[0]+'+'+query[1]+additional_parameters
     headers = {'authorization': str(api_key)}
     api_call = requests.get(url, headers=headers)
     return api_call
-
-
-def bible_response_builder(query, api_key):
-    mode = 'text'
-    additional_parameters = '&include-passage-references=false&include-footnotes=false&include-headings=false'
-    url = 'https://api.esv.org/v3/passage/'+mode+'/?q='+query[0]+'+'+query[1]+additional_parameters
-    headers = {'api-key': str(api_key)}
-    api_call = requests.get(url, headers=headers)
-    return api_call
-
 
 def final_esv_response(input_string):
     removed_data = input_string.split('"passages"')
@@ -79,6 +57,7 @@ def text_creator(response_builder):
 
 
 def biblia_response_builder(query, api_key):
+        rate_limiter()
         api_call = 'https://api.biblia.com/v1/bible/content/'+query[2]+'.txt.js?passage='+query[0]+query[1]
         api_call = api_call+'&callback=myCallbackFunction&key='+api_key
         r=requests.get(api_call)
@@ -87,7 +66,8 @@ def biblia_response_builder(query, api_key):
 
 def final_biblia_response(input_string):
     biblia_response = input_string
-    biblia_response_stripped_front = biblia_response.strip('"mycallbackfunction({"text":"')
+    biblia_response_stripped_front = biblia_response.strip('myCallbackfunction({"text":"')
+    biblia_response_stripped_front = biblia_response_stripped_front.replace('Function({"text":"','')
     biblia_response_stripped_back = biblia_response_stripped_front.strip('"});')
     biblia_response_final = biblia_response_stripped_back
     biblia_response_body = biblia_response_final
@@ -191,7 +171,38 @@ def requests_object_caller(input_string):
         api_call = biblia_response_builder(comment_parser(input_string), biblia_api_key_storage())
     return api_call
 
+
+
+
+
+
+
+
+
+
+
 '''
+def get_bible_response_builder(query):
+    # http://getbible.net/json?passage=John%2015:25-28,%2010,%2015&version=web
+    mode = 'json'
+    version = query[2]
+    chapter_verse = query[1].replace('.', ':')
+    book = query[0]
+    url = 'http://getbible.net/'+mode+'?passage='+book+'%20'+chapter_verse+',%2010,%2015&version='+version
+    api_call = requests.get(url)
+    return api_call
+def final_get_bible_response(input_string):
+    list_to_iterate = input_string.split('"verse":"')
+    list_without_beginning_statistics_to_iterate=list()
+    for i in list_to_iterate:
+        if 'book' not in i:
+            list_without_beginning_statistics_to_iterate.append(i)
+    get_bible_response_body = str()
+    for i in list_without_beginning_statistics_to_iterate:
+        temp_list = i.split('\r\n')
+        verse_to_add = temp_list
+        get_bible_response_body=get_bible_response_body+verse_to_add[0]
+    return get_bible_response_body
 def query_processor(input_string, requests_object):
     final_query = "ERROR: Query not processed"
     if "esv" in input_string:
