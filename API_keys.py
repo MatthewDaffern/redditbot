@@ -9,6 +9,7 @@ def biblia():
             keytextline = str(i)
             keytextline = keytextline.split(": ")
             key = keytextline[1]
+            key = key.replace('\n','')
     return key
 
 
@@ -21,4 +22,5 @@ def esv():
             keytextline = str(i)
             keytextline = keytextline.split(": ")
             key = keytextline[1]
+            key = key.replace('\n', '')
     return key

@@ -1,4 +1,3 @@
-
 import requests
 import log
 import api_keys
@@ -16,7 +15,7 @@ def comment_parser(input_string):
     # expects the format:
     # /u/scripture_bot! john 3:16 kjv
     query = input_string.split(" ")
-    query = query[1:3]
+    query = query[1:4]
     verse_chapter = query[1]
     verse_chapter = verse_chapter.split(":")
     verse_chapter = str(verse_chapter[0]+"."+verse_chapter[1])
@@ -24,12 +23,33 @@ def comment_parser(input_string):
     # should now be ['john','3.16',"kjv"]
     return query
 
+def get_bible_response_builder(query):
+    # http://getbible.net/json?passage=John%2015:25-28,%2010,%2015&version=web
+    mode = 'json'
+    version = query[2]
+    chapter_verse = query[1].replace('.', ':')
+    book = query[0]
+    url = 'http://getbible.net/'+mode+'?passage='+book+'%20'+chapter_verse+',%2010,%2015&version='+version
+    api_call = requests.get(url)
+    return api_call
+def final_get_bible_response(input_string):
+    input_string=input_string.replace()
+
 
 def esv_response_builder(query, api_key):
     mode = 'text'
     additional_parameters = '&include-passage-references=false&include-footnotes=false&include-headings=false'
     url = 'https://api.esv.org/v3/passage/'+mode+'/?q='+query[0]+'+'+query[1]+additional_parameters
-    headers = {'authorization': str(' '+api_key)}
+    headers = {'authorization': str(api_key)}
+    api_call = requests.get(url, headers=headers)
+    return api_call
+
+
+def bible_response_builder(query, api_key):
+    mode = 'text'
+    additional_parameters = '&include-passage-references=false&include-footnotes=false&include-headings=false'
+    url = 'https://api.esv.org/v3/passage/'+mode+'/?q='+query[0]+'+'+query[1]+additional_parameters
+    headers = {'api-key': str(api_key)}
     api_call = requests.get(url, headers=headers)
     return api_call
 
@@ -50,13 +70,10 @@ def text_creator(response_builder):
 
 
 def biblia_response_builder(query, api_key):
-    # example api call
-    # https://api.biblia.com/v1/bible/content/{bible}.{outputformat}?passage={biblereference}&key={api key}
-    # expects the query to be in the following format kjv,john,3:16
-        api_call = 'https://api.biblia.com/v1/bible/content/'+str(query[0])+'.js'+'?passage='
-        api_call = api_call+query[1]+query[2]+'&key='+api_key
-        biblia_api_return = requests.get(api_call)
-        return biblia_api_return
+        api_call = 'https://api.biblia.com/v1/bible/content/'+query[2]+'.txt.js?passage='+query[0]+query[1]
+        api_call = api_call+'&callback=myCallbackFunction&key='+api_key
+        r=requests.get(api_call)
+        return r
 
 
 def final_biblia_response(input_string):
