@@ -4,7 +4,7 @@ from authenticator import authenticate
 
 
 def unread_generator(reddit_object):
-    inbox = reddit_object.inbox.unread
+    inbox = reddit_object.inbox.unread(limit=None)
     return inbox
 
 
@@ -20,10 +20,13 @@ def reply_function_and_error_logging(reddit_object,
                                      unread_message,
                                      api_call_function,
                                      requests_object_caller_func):
-    comment_log = list()
-    for i in unread_message:
+    comment_log = list()  
+    for i in reddit_object.inbox.unread(limit=None):
+        if "scripture_bot!" not in i.body:
+            print("malformed request made by "+str(i.author)+" at "+str(time()))
+            return 'error'
         query = str(i.body)
-        query_request_logger(reddit_object, query)
+        query_request_logger(i, query)
         requests_object = requests_object_caller_func(query)
         api_request_logger(reddit_object, requests_object, query)
         response = api_call_function(query, requests_object)
@@ -45,7 +48,7 @@ def reply_function_and_error_logging(reddit_object,
     return comment_log
 
 
-'''
+
 def the_actual_bot(authentication, unread_generator_func, fullname_creator_func, reply_function):
     reddit_object = authentication()
     unread = unread_generator_func(reddit_object)
@@ -54,10 +57,14 @@ def the_actual_bot(authentication, unread_generator_func, fullname_creator_func,
 
 
 def the_actual_bot(authentication, unread_generator_func, fullname_creator_func, reply_function):
-    reddit_object = authentication()
+    reddit_object = authentication
     while 1 == 1:
+        x=int()
         unread = unread_generator_func(reddit_object)
-        reply_function(reddit_object, fullname_creator_func, unread, query_processor)
-
+        reply_function(reddit_object, fullname_creator_func, unread, query_processor,requests_object_caller)
+        x=x+1
+        if x>7:
+            break
 
 the_actual_bot(authenticate(), unread_generator, fullname_creator, reply_function_and_error_logging)
+'''
