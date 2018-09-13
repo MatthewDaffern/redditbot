@@ -1,41 +1,15 @@
-import praw
 from common import *
 from log import *
-
-
-def authenticate():
-    username_var, password_var = str()
-    client_id_var, client_secret_var = str()
-    user_agent_var = str()
-    config = open('config_file', 'r+')
-    config_list = list(config.readlines())
-    for i in config_list:
-        config_line = i.split(': ')
-        if config_line[0] == 'username':
-            username_var = config_line[1]
-        if config_line[0] == 'password':
-            password_var = config_line[1]
-        if config_line[0] == 'client_id':
-            client_id_var = config_line[1]
-        if config_line[0] == 'client_secret':
-            client_secret_var = config_line[1]
-        if config_line[0] == 'user_agent':
-            user_agent_var = config_line[1]
-    reddit_instance = praw.Reddit(client_id=client_id_var,
-                                  client_secret=client_secret_var,
-                                  password=password_var,
-                                  user_agent=user_agent_var,
-                                  username=username_var)
-    return reddit_instance
+from authenticator import authenticate
 
 
 def unread_generator(reddit_object):
-    inbox = reddit_object.inbox.unread()
+    inbox = reddit_object.inbox.unread
     return inbox
 
 
 def fullname_creator(comment_object):
-    initial_fullname = str(comment_object.fullname())
+    initial_fullname = str(comment_object.fullname)
     initial_fullname_array = initial_fullname.split('_')
     final_fullname = str(initial_fullname_array[1])
     return final_fullname
@@ -48,7 +22,7 @@ def reply_function_and_error_logging(reddit_object,
                                      requests_object_caller_func):
     comment_log = list()
     for i in unread_message:
-        query = str(i)
+        query = str(i.body)
         query_request_logger(reddit_object, query)
         requests_object = requests_object_caller_func(query)
         api_request_logger(reddit_object, requests_object, query)
@@ -71,9 +45,19 @@ def reply_function_and_error_logging(reddit_object,
     return comment_log
 
 
+'''
 def the_actual_bot(authentication, unread_generator_func, fullname_creator_func, reply_function):
     reddit_object = authentication()
     unread = unread_generator_func(reddit_object)
     reply_function(reddit_object, fullname_creator_func, unread, query_processor)
+'''
 
-# the_actual_bot(authenticate(), unread_generator, fullname_creator, reply_function_and_error_logging)
+
+def the_actual_bot(authentication, unread_generator_func, fullname_creator_func, reply_function):
+    reddit_object = authentication()
+    while 1 == 1:
+        unread = unread_generator_func(reddit_object)
+        reply_function(reddit_object, fullname_creator_func, unread, query_processor)
+
+
+the_actual_bot(authenticate(), unread_generator, fullname_creator, reply_function_and_error_logging)

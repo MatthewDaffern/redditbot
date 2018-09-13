@@ -3,4 +3,5 @@ keys.txt
 /.idea
 /__pycache__
 config_file
-
+test_instance.py
+authenticator.py
