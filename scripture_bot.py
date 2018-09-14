@@ -23,11 +23,13 @@ def reply_function_and_error_logging(reddit_object,
     comment_log = list()
     for i in reddit_object.inbox.unread(limit=None):
         if "scripture_bot!" not in i.body:
+            i.mark_read()
             error_msg = str(i.author)+' made the malformed request '+str(i.body)+"("+str(i)+")"+" at "+str(time())
             print(error_msg)
             i.mark_read()
             return error_msg
         if "scripture_bot!" in i.body:
+            i.mark_read()
             query = str(i.body)
             query_request_logger(i, query)
             requests_object = requests_object_caller_func(query)
@@ -48,7 +50,6 @@ def reply_function_and_error_logging(reddit_object,
                 unread_comment.reply(response)
                 comment_log.append(str(response))
             query_response_logger(i, requests_object, query, response)
-            i.mark_read()
     return comment_log
 
 
