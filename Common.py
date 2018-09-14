@@ -60,6 +60,7 @@ def biblia_response_builder(query, api_key):
         rate_limiter()
         api_call = 'https://api.biblia.com/v1/bible/content/'+query[2]+'.txt.js?passage='+query[0]+query[1]
         api_call = api_call+'&callback=myCallbackFunction&key='+api_key
+        api_key = api_key.replace('%0A','')
         r=requests.get(api_call)
         return r
 
@@ -75,25 +76,24 @@ def final_biblia_response(input_string):
 
 
 def biblia_footer():
-    couple_of_spaces = "\n \n"
+    couple_of_spaces = "\n\n***\n"
     tos_footer1 = "^(this) ^(bot) ^(uses) ^(the) [^(biblia)](https://biblia.com/)"
-    tos_footer2 = " ^(web) ^(services) ^(from) [^(Faithlife Corporation)](https://faithlife.com/about/))"
+    tos_footer2 = " ^(web) ^(services) ^(from) [^(Faithlife) ^(Corporation)](https://faithlife.com/about/)"
     tos_footer = tos_footer1+tos_footer2
-    github_footer = "^(|) [^(source code)](https://github.com/matthewdaffern/redditbot])"
-    msg_the_devs_footer = '^(|) [^(message the developers)](https://www.reddit.com/message/compose?to=/r/scripturebot)'
+    github_footer = "^(|)[^(source code)](https://github.com/matthewdaffern/redditbot])"
+    msg_the_devs_footer = '^(|)[^(message the developers)](https://www.reddit.com/message/compose?to=/r/scripturebot)'
     footer = couple_of_spaces+tos_footer+github_footer+msg_the_devs_footer
     return footer
 
 
 def esv_footer():
-    esv_title = "*esv*"
-    couple_of_spaces = "\n \n"
+    couple_of_spaces = "\n\n***\n"
     tos_footer1 = '^(this) ^(bot) ^(uses) ^(the) [^(esv)](https://api.esv.org/docs/)'
-    tos_footer2 = ' ^(web) ^(services) ^(from) [^(logos bible software)](https://www.logos.com/))'
+    tos_footer2 = ' ^(web) ^(services) ^(from) [^(logos bible software)](https://www.logos.com/)'
     tos_footer = tos_footer1+tos_footer2
     github_footer = "^(|) [^(source code)](https://github.com/matthewdaffern/redditbot])"
     msg_the_devs_footer = '^(|) [^(message the developers)](https://www.reddit.com/message/compose?to=/r/scripturebot)'
-    footer = esv_title+couple_of_spaces+tos_footer+github_footer+msg_the_devs_footer
+    footer = couple_of_spaces+tos_footer+github_footer+msg_the_devs_footer
     return footer
 
 
@@ -119,7 +119,8 @@ def full_comment_string(input_string, response_body, footer_input):
     # input string is the string initially used to make the api call.
     bot_username = "/u/scripture_bot!"
     reconverted_query = input_string.strip(bot_username)
-    header = str("*"+reconverted_query+"*"+"\n \n")
+
+    header = str(reconverted_query+"\n \n")
     footer = footer_input
     final_comment = header+response_body+footer
     return final_comment
