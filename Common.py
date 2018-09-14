@@ -76,7 +76,7 @@ def final_biblia_response(input_string):
 
 
 def biblia_footer():
-    couple_of_spaces = "\n\n***\n"
+    couple_of_spaces = "\n\n***  &nbsp;  \n"
     tos_footer1 = "^(this) ^(bot) ^(uses) ^(the) [^(biblia)](https://biblia.com/)"
     tos_footer2 = " ^(web) ^(services) ^(from) [^(Faithlife) ^(Corporation)](https://faithlife.com/about/)"
     tos_footer = tos_footer1+tos_footer2
@@ -87,9 +87,9 @@ def biblia_footer():
 
 
 def esv_footer():
-    couple_of_spaces = "\n\n***\n"
+    couple_of_spaces = "\n\n***  &nbsp;  \n"
     tos_footer1 = '^(this) ^(bot) ^(uses) ^(the) [^(esv)](https://api.esv.org/docs/)'
-    tos_footer2 = ' ^(web) ^(services) ^(from) [^(logos bible software)](https://www.logos.com/)'
+    tos_footer2 = ' ^(web) ^(services) ^(from) [^(logos) ^(bible) ^(software)](https://www.logos.com/)'
     tos_footer = tos_footer1+tos_footer2
     github_footer = "^(|) [^(source code)](https://github.com/matthewdaffern/redditbot])"
     msg_the_devs_footer = '^(|) [^(message the developers)](https://www.reddit.com/message/compose?to=/r/scripturebot)'
