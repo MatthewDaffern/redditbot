@@ -1,4 +1,4 @@
-from common import *
+from Common import *
 from log import *
 from authenticator import authenticate
 
@@ -6,7 +6,7 @@ from authenticator import authenticate
 def unread_generator(reddit_object):
     inbox = reddit_object.inbox.unread(limit=None)
     return inbox
-
+    
 
 def fullname_creator(comment_object):
     initial_fullname = str(comment_object.fullname)
@@ -49,10 +49,6 @@ def reply_function_and_error_logging(reddit_object,
                 compliant_log2 = ' by ' + str(i.author) + '\n \n and the following error was raised ' + response
                 compliant_log = compliant_log1 + compliant_log2
                 print(compliant_log)
-                reply1 = 'malformed request: your request cannot be fulfilled for one or more reasons.'
-                reply2 = ' the developers have been notified'
-                reply = reply1 + reply2
-                unread_comment.reply(reply)
             if 'error' not in response:
                 unread_comment.reply(response)
                 comment_log.append(str(response))
@@ -78,6 +74,11 @@ def the_actual_bot(authentication, unread_generator_func, fullname_creator_func,
     unread = unread_generator_func(reddit_object)
     reply_function(reddit_object, fullname_creator_func, unread, query_processor, requests_object_caller)
 
+    
 
-# the_actual_bot(authenticate(), unread_generator, fullname_creator, reply_function_and_error_logging)
+
+
+while 1==1:
+    the_actual_bot(authenticate(), unread_generator, fullname_creator, reply_function_and_error_logging)
+# pdb.runcall(the_actual_bot(authenticate(), unread_generator, fullname_creator, reply_function_and_error_logging))
 

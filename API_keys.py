@@ -1,7 +1,7 @@
 
 
 def biblia():
-    bibliakeyfile = open('config_file', 'r+')
+    bibliakeyfile = open('config_file', 'r')
     key = str()
     bibliakey = list(bibliakeyfile.readlines())
     for i in bibliakey:
@@ -14,7 +14,7 @@ def biblia():
 
 
 def esv():
-    esvkeyfile = open('config_file', 'r+')
+    esvkeyfile = open('config_file', 'r')
     esvkey = list(esvkeyfile.readlines())
     key = str()
     for i in esvkey:
