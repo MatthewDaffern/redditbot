@@ -108,8 +108,8 @@ def biblia_footer():
 
 def esv_footer():
     couple_of_spaces = "\n\n***  &nbsp;  \n"
-    tos_footer1 = '^(this) ^(bot) ^(uses) ^(the) [^(esv)](https://api.esv.org/docs/)'
-    tos_footer2 = ' ^(web) ^(services) ^(from) [^(logos) ^(bible) ^(software)](https://www.logos.com/)'
+    tos_footer1 = '^(this) ^(bot) ^(uses) ^(the) [^(ESV) ^(API)](https://api.esv.org/docs/)'
+    tos_footer2 = ' ^(from) [^(Crossway)](https://www.crossway.org/)'
     tos_footer = tos_footer1+tos_footer2
     github_footer = " ^(|) [^(source code)](https://github.com/matthewdaffern/redditbot])"
     msg_the_devs_footer = ' ^(|) [^(message the developers)](https://www.reddit.com/message/compose?to=/r/scripturebot)'
