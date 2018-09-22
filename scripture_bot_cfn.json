@@ -1,0 +1,98 @@
+{
+  "Parameters": {
+    "ZipFile": {
+      "Description": "Zip file with the code",
+      "Type": "String"
+    },
+    "BotFunctionMemory": {
+      "Description": "Amount of memory to allocate to the lambda function. Must be a multiple of 64. Minimum value is 128.",
+      "Type": "Number",
+      "Default": "256"
+    },
+    "BotMaxRunTime": {
+      "Description": "The maximum number of seconds the bot can run before Lambda terminates the execution of the function.",
+      "Type": "Number",
+      "Default": "180"
+    },
+    "BotRecurrenceTime": {
+      "Description": "The frequency at which the bot should run, specified in minutes. Must be an integer value that is >= 2. To guarantee staying in the free tier, the values must satisfy this inequality: (BotMaxRunTime / (BotRecurrenceTime * 60)) * (BotFunctionMemory / 128)  < 1.2",
+      "Type": "String",
+      "Default": "5"
+    }
+  },
+  "Resources": {
+    "BotLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "ZipFile": {
+            "Ref": "ZipFile"
+          }
+        },
+        "Description": "The bot lives here!",
+        "FunctionName": "ScriptureBot01",
+        "Handler": "invoker.bot_invoke",
+        "MemorySize": { "Ref" : "BotFunctionMemory" },
+        "Role": {
+          "Fn::GetAtt": ["LambdaExecutionRole", "Arn"]
+        },
+        "Runtime": "python3.6",
+        "Timeout": { "Ref" : "BotMaxRunTime" }
+      }
+    },
+    "LambdaExecutionRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [{
+            "Effect": "Allow",
+            "Principal": {
+              "Service": ["lambda.amazonaws.com"]
+            },
+            "Action": ["sts:AssumeRole"]
+          }]
+        },
+        "Path": "/",
+        "Policies": [{
+          "PolicyName": "root",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [{
+              "Effect": "Allow",
+              "Action": ["logs:*"],
+              "Resource": "arn:aws:logs:*:*:*"
+            }]
+          }
+        }]
+      }
+    },
+    "LambdaTriggerEventRule": {
+      "Type": "AWS::Events::Rule",
+      "Properties": {
+        "Description": "ScheduledRule",
+        "ScheduleExpression": { "Fn::Join" : ["", ["rate(", { "Ref" : "BotRecurrenceTime" }, " minutes)"]]},
+        "State": "ENABLED",
+        "Targets": [{
+          "Arn": {
+            "Fn::GetAtt": ["BotLambdaFunction", "Arn"]
+          },
+          "Id": "TargetFunctionV1"
+        }]
+      }
+    },
+    "PermissionForEventsToInvokeLambda": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "BotLambdaFunction"
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "events.amazonaws.com",
+        "SourceArn": {
+          "Fn::GetAtt": ["LambdaTriggerEventRule", "Arn"]
+        }
+      }
+    }
+  }
+}
