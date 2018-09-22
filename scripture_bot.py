@@ -67,9 +67,9 @@ def the_actual_bot(authentication, unread_generator_func, fullname_creator_func,
     unread = unread_generator_func(reddit_object)
     reply_function(reddit_object, fullname_creator_func, unread, query_processor, requests_object_caller)
 
-
-while 1 == 1:
-    the_actual_bot(authenticate(), unread_generator, fullname_creator, reply_function_and_error_logging)
+# Uncomment this if you want to run the bot locally and activate the script by executing scripture_bot.py
+# while 1 == 1:
+#     the_actual_bot(authenticate(), unread_generator, fullname_creator, reply_function_and_error_logging)
 
 # pdb.runcall(the_actual_bot(authenticate(), unread_generator, fullname_creator, reply_function_and_error_logging))
 
