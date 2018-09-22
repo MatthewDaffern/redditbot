@@ -22,13 +22,6 @@ def reply_function_and_error_logging(reddit_object,
                                      requests_object_caller_func):
     comment_log = list()
     for i in reddit_object.inbox.unread(limit=None):
-        error_handling_test = error_handling((str(i.body)))
-        if 'error' in error_handling_test:
-            print(error_handling_test + ' ' + str(i.body) +
-                  '\n \n made by ' + str(i.author) +
-                  '\n \n at ' + time())
-            i.mark_read()
-            return error_handling_test
         if "scripture_bot!" not in i.body:
             i.mark_read()
             error_msg = str(i.author)+' made the malformed request '+str(i.body)+"\n \n ("+str(i)+")"+" at "+str(time())
@@ -74,11 +67,9 @@ def the_actual_bot(authentication, unread_generator_func, fullname_creator_func,
     unread = unread_generator_func(reddit_object)
     reply_function(reddit_object, fullname_creator_func, unread, query_processor, requests_object_caller)
 
-    
 
-
-
-while 1==1:
+while 1 == 1:
     the_actual_bot(authenticate(), unread_generator, fullname_creator, reply_function_and_error_logging)
+
 # pdb.runcall(the_actual_bot(authenticate(), unread_generator, fullname_creator, reply_function_and_error_logging))
 
