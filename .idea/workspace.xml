@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="741c4e31-0fb5-4c5d-9ab8-40f921b1cb83" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/scripture_bot.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripture_bot.py" afterDir="false" />
-    </list>
+    <list default="true" id="741c4e31-0fb5-4c5d-9ab8-40f921b1cb83" name="Default Changelist" comment="" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -49,8 +47,8 @@
         <counts>
           <entry key="project.closed" value="3" />
           <entry key="project.open.time.3" value="1" />
-          <entry key="project.open.time.4" value="2" />
-          <entry key="project.opened" value="3" />
+          <entry key="project.open.time.4" value="3" />
+          <entry key="project.opened" value="4" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.edit">
@@ -125,7 +123,7 @@
       </list>
     </option>
   </component>
-  <component name="ProjectFrameBounds" extendedState="7">
+  <component name="ProjectFrameBounds" extendedState="6">
     <option name="x" value="396" />
     <option name="y" value="-20" />
     <option name="width" value="960" />
@@ -190,6 +188,7 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1936" height="1096" extended-state="6" />
+    <editor active="true" />
     <layout>
       <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.51369864" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
@@ -253,8 +252,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/scripture_bot.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="711">
-          <caret line="69" column="105" selection-start-line="69" selection-start-column="105" selection-end-line="69" selection-end-column="105" />
+        <state relative-caret-position="643">
+          <caret line="65" column="8" selection-start-line="65" selection-start-column="8" selection-end-line="73" selection-end-column="115" />
         </state>
       </provider>
     </entry>
