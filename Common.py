@@ -83,6 +83,8 @@ def comment_parser(input_string, version_dict):
     bible_version_found = 'no'
     # searches for the end of the query
     while version_query == 1:
+        if search_indice == len(query):
+            break
         test = query[search_indice].upper()
         if test in available_bible_versions:
             bible_version_found = 'yes'
