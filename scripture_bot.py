@@ -22,14 +22,18 @@ def reply_function_and_error_logging(reddit_object,
                                      requests_object_caller_func):
     comment_log = list()
     for i in reddit_object.inbox.unread(limit=None):
+        list_of_saved = reddit_object.redditor('scripture_bot').saved()
+        counter = 1
+        for comments in list_of_saved:
+            if str(i) == str(comments):
+                return 'already responded to the redditor'
+            counter +=1
         if "scripture_bot!" not in i.body:
-            i.mark_read()
             error_msg = str(i.author)+' made the malformed request '+str(i.body)+"\n \n ("+str(i)+")"+" at "+str(time())
             print(error_msg)
             i.mark_read()
             return error_msg
         if "scripture_bot!" in i.body:
-            i.mark_read()
             query = str(i.body)
             query_request_logger(i, query)
             requests_object = requests_object_caller_func(query)
@@ -38,15 +42,18 @@ def reply_function_and_error_logging(reddit_object,
             comment_fullname = comment_fullname_function(i)
             unread_comment = reddit_object.comment(id=comment_fullname)
             if 'error' in response:
-                compliant_log1 = query + ' was made at ' + time()
-                compliant_log2 = ' by ' + str(i.author) + '\n \n and the following error was raised ' + response
-                compliant_log = compliant_log1 + compliant_log2
+                compliant_log = query +\
+                                ' was made at ' + time()\
+                                + ' by ' + str(i.author) \
+                                + '\n \n and the following error was raised ' \
+                                + response
                 print(compliant_log)
+                i.mark_read()
             if 'error' not in response:
                 unread_comment.reply(response)
-                comment_log.append(str(response))
+                i.save()
+                i.mark_read()
             query_response_logger(i, requests_object, query, response)
-    return comment_log
 
 
 def inbox_mark_read_function(reddit_object):
@@ -69,7 +76,7 @@ def the_actual_bot(authentication, unread_generator_func, fullname_creator_func,
 
 # Uncomment this if you want to run the bot locally and activate the script by executing scripture_bot.py
 # while 1 == 1:
-#     the_actual_bot(authenticate(), unread_generator, fullname_creator, reply_function_and_error_logging)
+#    the_actual_bot(authenticate(), unread_generator, fullname_creator, reply_function_and_error_logging)
 
 # pdb.runcall(the_actual_bot(authenticate(), unread_generator, fullname_creator, reply_function_and_error_logging))
 
