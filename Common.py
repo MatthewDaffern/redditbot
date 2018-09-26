@@ -6,7 +6,7 @@ import time
 
 def rate_limiter():
     whole_second = 1
-    divisor = 32
+    divisor = 40
     rate_limiting_time = whole_second / divisor
     initial_time = time.time()
     final_time = time.time()
@@ -67,7 +67,7 @@ def comment_parser(input_string, version_dict):
     if 'error' in input_string:
         return input_string
     # initial preprocessing and turns the query into a list
-    query = input_string.replace(':', '.')
+    query = input_string
     while "  " in query:
         query = query.replace('  ', ' ')
     query = query.split(" ")
@@ -81,19 +81,29 @@ def comment_parser(input_string, version_dict):
     search_indice = index_of_username_mention
     version_query = 1
     bible_version_found = 'no'
+    bible_version = 'error: version not found'
     # searches for the end of the query
     while version_query == 1:
         if search_indice == len(query):
             break
         test = query[search_indice].upper()
-        if test in available_bible_versions:
-            bible_version_found = 'yes'
-            break
+        for i in available_bible_versions:
+            if i in test:
+                print(i)
+                bible_version = i
+                bible_version_found = 'yes'
+                break
         search_indice = search_indice + 1
     if bible_version_found == 'no':
         return 'error: no bible version found'
     query_slice = query[index_of_username_mention:int(search_indice+1)]
-    bible_version = 'error: version not found'
+    fixed_query_slice = list()
+    for i in query_slice:
+        if bible_version in i:
+            fixed_query_slice.append(bible_version)
+            break
+        fixed_query_slice.append(i)
+    query_slice = fixed_query_slice
     chapter_verse = 'error: chapter verse not found'
     username_mention = 'error: username not found'
     for i in query_slice:
@@ -101,17 +111,20 @@ def comment_parser(input_string, version_dict):
             bible_version = i
         if username_test in i:
             username_mention = i
-        if '.' in i:
+        if ':' in i:
+            print('found chapter_verse'+str(i))
             chapter_verse = i
     query_slice.remove(bible_version)
     query_slice.remove(username_mention)
-    if '.' not in chapter_verse:
+    print('input string is: ' + str(query_slice))
+    if ':' not in chapter_verse:
         chapter_verse = query_slice[len(query_slice)-1]
     for i in (bible_version, chapter_verse, username_mention):
         if 'error' in i:
             return 'User has made a malformed query'
     query_slice.remove(chapter_verse)
     bible_version = bible_version.upper()
+    chapter_verse = chapter_verse.replace(':', '.')
     actual_bible_version = available_bible_versions[bible_version]
     book = str(query_slice[0]).capitalize()
     if len(query_slice) > 1:
@@ -122,6 +135,7 @@ def comment_parser(input_string, version_dict):
         book = book.rstrip(' + ')
     final_query = [book, chapter_verse, actual_bible_version]
     # should now be ['john','3.16',"KJV"]
+    print('input string is: ' + str(query_slice))
     return final_query
 
 
@@ -163,6 +177,8 @@ def biblia_response_builder(query, api_key):
         api_call = api_call+'&callback=myCallbackFunction&key='+api_key
         api_call = api_call.replace('0A', '')
         api_call = api_call.replace('%', '')
+        print(query)
+        print(api_call)
         r = requests.get(api_call)
         return r
 
