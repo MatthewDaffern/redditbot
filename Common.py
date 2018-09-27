@@ -89,7 +89,6 @@ def comment_parser(input_string, version_dict):
         test = query[search_indice].upper()
         for i in available_bible_versions:
             if i in test:
-                print(i)
                 bible_version = i
                 bible_version_found = 'yes'
                 break
@@ -112,11 +111,9 @@ def comment_parser(input_string, version_dict):
         if username_test in i:
             username_mention = i
         if ':' in i:
-            print('found chapter_verse'+str(i))
             chapter_verse = i
     query_slice.remove(bible_version)
     query_slice.remove(username_mention)
-    print('input string is: ' + str(query_slice))
     if ':' not in chapter_verse:
         chapter_verse = query_slice[len(query_slice)-1]
     for i in (bible_version, chapter_verse, username_mention):
@@ -135,7 +132,6 @@ def comment_parser(input_string, version_dict):
         book = book.rstrip(' + ')
     final_query = [book, chapter_verse, actual_bible_version]
     # should now be ['john','3.16',"KJV"]
-    print('input string is: ' + str(query_slice))
     return final_query
 
 
@@ -177,8 +173,6 @@ def biblia_response_builder(query, api_key):
         api_call = api_call+'&callback=myCallbackFunction&key='+api_key
         api_call = api_call.replace('0A', '')
         api_call = api_call.replace('%', '')
-        print(query)
-        print(api_call)
         r = requests.get(api_call)
         return r
 
