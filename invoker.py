@@ -3,4 +3,4 @@ from authenticator import authenticate
 
 
 def bot_invoke(event, context):
-    the_actual_bot(authenticate(), unread_generator, fullname_creator, reply_function_and_error_logging)
+    the_actual_bot(authenticate(), fullname_creator, reply_function_and_error_logging)

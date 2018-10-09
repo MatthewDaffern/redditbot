@@ -24,17 +24,11 @@ def esv_api_key_storage():
     return API_keys.esv()
 
 
-def error_handling(input_string):
-    error_message = 'error: one or more things are missing from the query'
-    if ':' not in input_string:
-        return error_message
-    return 'passed initial sanitization!'
-
-
 def available_versions():
     correct_versions = dict([('ASV', 'ASV'),
                              ('ARB', 'ARVANDYKE'),
                              ('KJV', 'KJV'),
+                             ('APOC', 'KJVAPOC'),
                              ('LSG', 'LSG'),
                              ('BYZ', 'BYZ'),
                              ('DRB', 'DARBY'),
@@ -59,79 +53,93 @@ def available_versions():
 
 
 def comment_parser(input_string, version_dict):
-    # expects the format:
-    # u/scripture_bot! john 3:16 kjv
-    index_of_username_mention = 0
-    username_test = 'scripture_bot'
-    # exits early to avoid an exception
-    if 'error' in input_string:
-        return input_string
-    # initial preprocessing and turns the query into a list
-    query = input_string
-    while "  " in query:
-        query = query.replace('  ', ' ')
-    query = query.split(" ")
-    # looks for the version of the bible to use so that the query slice can be created.
-    for i in query:
-        if 'scripture_bot' in i:
-            index_of_username_mention = query.index(i)
-            username_test = i
-            break
-    available_bible_versions = version_dict
-    search_indice = index_of_username_mention
-    version_query = 1
-    bible_version_found = 'no'
-    bible_version = 'error: version not found'
-    # searches for the end of the query
-    while version_query == 1:
-        if search_indice == len(query):
-            break
-        test = query[search_indice].upper()
-        for i in available_bible_versions:
-            if i in test:
-                bible_version = i
-                bible_version_found = 'yes'
+    def space_remover_and_list_creator(input_string_object):
+        query = input_string_object
+        while "  " in query:
+            query = query.replace('  ', ' ')
+        query = query.split(" ")
+        return query
+
+    def index_of_username_mention_finder(list_input):
+        index_of_username_mention = 0
+        for i in list_input:
+            if 'scripture_bot' in i:
+                index_of_username_mention = list_input.index(i)
                 break
-        search_indice = search_indice + 1
-    if bible_version_found == 'no':
-        return 'error: no bible version found'
-    query_slice = query[index_of_username_mention:int(search_indice+1)]
-    fixed_query_slice = list()
-    for i in query_slice:
-        if bible_version in i:
-            fixed_query_slice.append(bible_version)
-            break
-        fixed_query_slice.append(i)
-    query_slice = fixed_query_slice
-    chapter_verse = 'error: chapter verse not found'
-    username_mention = 'error: username not found'
-    for i in query_slice:
-        if i.upper() in available_bible_versions:
-            bible_version = i
-        if username_test in i:
-            username_mention = i
-        if ':' in i:
-            chapter_verse = i
-    query_slice.remove(bible_version)
-    query_slice.remove(username_mention)
-    if ':' not in chapter_verse:
-        chapter_verse = query_slice[len(query_slice)-1]
-    for i in (bible_version, chapter_verse, username_mention):
-        if 'error' in i:
-            return 'User has made a malformed query'
-    query_slice.remove(chapter_verse)
-    bible_version = bible_version.upper()
-    chapter_verse = chapter_verse.replace(':', '.')
-    actual_bible_version = available_bible_versions[bible_version]
-    book = str(query_slice[0]).capitalize()
-    if len(query_slice) > 1:
-        book = str()
+        return index_of_username_mention
+
+    def slice_creator(query, version_dict_object):
+        available_bible_versions = version_dict_object
+        index_of_username_mention = index_of_username_mention_finder(query)
+        search_indice = index_of_username_mention
+        version_query_loop = 'on'
+        # searches for the end of the query
+        success = 'no'
+        while version_query_loop == 'on':
+            if success == 'yes':
+                break
+            if search_indice == len(query):
+                return log.incorrect_bible_version()
+            test = query[search_indice].upper()
+            for i in list(available_bible_versions):
+                if test in i:
+                    success = 'yes'
+                    break
+            search_indice = search_indice + 1
+        query_slice = query[index_of_username_mention:int(search_indice + 1)]
+        return query_slice
+
+    def final_list_creator(query, version_dict_object):
+        username_mention = 'scripture_bot'
+        query_slice = query
+        available_bible_versions = version_dict_object
+        # [/u/scripture_bot!,1st,John,3:2,KJV]
         for i in query_slice:
-            i = str(i)
-            book = book+i.capitalize()+'+'
-        book = book.rstrip(' + ')
-    final_query = [book, chapter_verse, actual_bible_version]
-    # should now be ['john','3.16',"KJV"]
+            if username_mention in i:
+                username_mention_index = query_slice.index(i)
+            if i.upper() in list(available_bible_versions):
+                bible_version_index = query_slice.index(i)
+                bible_version = available_bible_versions[i.upper()]
+        var_check = list(locals())
+        for i in ('bible_version_index', 'username_mention_index'):
+            if i not in var_check:
+                print(str(i)+' not assigned')
+                bible_version = 'KJV'
+                bible_book = '1st John'
+                bible_chapter_verse = '5.7'
+                final_query_slice = [bible_book, bible_chapter_verse, bible_version]
+                return final_query_slice
+        book_chapter_verse_slice = query_slice[int(username_mention_index+1) : int(bible_version_index)]
+        for i in book_chapter_verse_slice:
+            if '.' in i:
+                bible_chapter_verse = i
+                bible_chapter_verse_index = book_chapter_verse_slice.index(i)
+            if ':' in i:
+                bible_chapter_verse = i
+                bible_chapter_verse_index = book_chapter_verse_slice.index(i)
+        var_check = list(locals())
+        if 'bible_chapter_verse_index' not in var_check:
+            bible_version = 'KJV'
+            bible_book = '1st John'
+            bible_chapter_verse = '5.7'
+            final_query_slice = [bible_book, bible_chapter_verse, bible_version]
+            return final_query_slice
+        bible_book_slice = book_chapter_verse_slice[:(bible_chapter_verse_index)]
+        bible_book = str()
+        for i in bible_book_slice:
+            bible_book = bible_book + str(i) + '+'
+        bible_book = bible_book.rstrip('+')
+        var_check = list(locals())
+        if 'bible_book' not in var_check:
+            bible_book = '1st John'
+        if 'bible_chapter_verse' not in var_check:
+            bible_chapter_verse = '5.7'
+        if 'bible_version' not in var_check:
+            bible_version = 'KJV'
+        final_query_slice = [bible_book, bible_chapter_verse, bible_version]
+        return final_query_slice
+    final_query = final_list_creator(slice_creator(space_remover_and_list_creator(input_string), version_dict),
+                                     version_dict)
     return final_query
 
 
@@ -215,16 +223,9 @@ def esv_footer():
 def api_error_handler(response_builder):
     # expects a requests object as input
     if "200" not in str(response_builder):
-        return "error: one or more queries could not be handled. Web Services cannot handle your request\n\n"
+        log.http_non_200(response_builder)
     if "200" in str(response_builder):
         return "success"
-
-
-def length_checker(final_comment):
-    if len(final_comment) > 8000:
-        return "error:your request could not be fulfilled because it's over 8,000 characters.\n\n"
-    else:
-        return"success"
 
 
 def full_comment_string(input_string, response_body, footer_input):
@@ -249,7 +250,7 @@ def biblia(input_string, requests_object):
         return api_error_handling
     biblia_body = final_biblia_response(text_creator(api_call))
     response = full_comment_string(input_string, biblia_body, biblia_footer())
-    length_test = length_checker(response)
+    length_test = log.length_checker(response)
     if 'error' in length_test:
         return length_test
     return response
@@ -264,7 +265,7 @@ def esv(input_string, requests_object):
         return api_error_handling
     esv_body = final_esv_response(text_creator(api_call))
     response = full_comment_string(input_string, esv_body, esv_footer())
-    length_test = length_checker(response)
+    length_test = log.length_checker(response)
     if 'error' in length_test:
         return length_test
     return response
@@ -287,4 +288,6 @@ def requests_object_caller(input_string):
         api_call = esv_response_builder(comment_parser(input_string, available_versions()), esv_api_key_storage())
     if "ESV" not in input_string.upper():
         api_call = biblia_response_builder(comment_parser(input_string, available_versions()), biblia_api_key_storage())
+    if 'ERROR' in api_call:
+        return log.log_wrapper(api_call)
     return api_call
