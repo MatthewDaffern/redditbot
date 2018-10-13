@@ -30,6 +30,7 @@ def reply_function_and_error_logging(reddit_object,
             comment_fullname = comment_fullname_function(i)
             unread_comment = reddit_object.comment(id=comment_fullname)
             if 'error' in response:
+                unread_comment.reply(response)
                 i.mark_read()
                 return complaint_log(i.author, response)
             if 'error' not in response:
@@ -47,7 +48,7 @@ def the_actual_bot(authentication, fullname_creator_func, reply_function):
 
 # from authenticator import authenticate
 # while 1 == 1:
-#   the_actual_bot(authenticate(), fullname_creator, reply_function_and_error_logging)
+#    the_actual_bot(authenticate(), fullname_creator, reply_function_and_error_logging)
 
 
 # pdb.runcall(the_actual_bot(authenticate(), unread_generator, fullname_creator, reply_function_and_error_logging))

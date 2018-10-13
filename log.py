@@ -86,7 +86,7 @@ def malformed_request(author_object, body_object, comment_object):
 
 
 def complaint_log(author_object, response):
-    complaint_error = query +\
+    complaint_error = 'a reddit comment' +\
                 ' was made at ' + time()\
                 + ' by ' + str(author_object) \
                 + '\n \n and the following error was raised ' \
