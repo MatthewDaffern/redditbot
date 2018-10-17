@@ -73,26 +73,29 @@ def comment_parser(input_string, version_dict):
         while "  " in query:
             query = query.replace('  ', ' ')
         query = query.split(" ")
-        for i in query:
-            print(str(i))
         return query
 # Creates the initial list object
 
     def newline_character_remover(list_input):
-        cleaned_list = list()
+        available_bible_versions = available_versions()
+        username_mention = 'scripture_bot'
+        index_of_version = 0
+        index_of_username_mention = 0
+        cleaned_version = 'KJV'
         for i in list_input:
-            place_holder = i
-            if '\n' in place_holder:
-                place_holder = place_holder.split('\n')
-                place_holder = place_holder[0]
-                cleaned_list.append(place_holder)
-            if '\n' not in place_holder:
-                cleaned_list.append(place_holder)
+            for version in available_bible_versions:
+                if version in i:
+                    cleaned_version = version
+                    index_of_version = list_input.index(i)
+            if username_mention in i:
+                index_of_username_mention = list_input.index(i)
+        list_input[index_of_username_mention] = username_mention
+        list_input[index_of_version] = cleaned_version
+        cleaned_list = list_input
         return cleaned_list
 # Removes the \n characters that were messing me up.
 
     def index_of_username_mention_finder(list_input):
-        print(list_input)
         index_of_username_mention = 0
         for i in list_input:
             if 'scripture_bot' in i:
@@ -205,7 +208,7 @@ def final_esv_response(input_string):
         .replace('\\u2019', '')\
         .replace('\\u2018', '')\
         .replace('\\u2014', '')\
-        .replace(': [" ', '')\
+        .replace(': ["', '')\
         .replace(']}', '')\
         .replace('(ESV)"', '(ESV)')
     while '  ' in removed_characters:
@@ -360,5 +363,4 @@ def query_processor(input_string, requests_object):
     if "ESV" not in input_string.upper():
         final_query = biblia(input_string, requests_object)
     return final_query
-
 
