@@ -122,7 +122,7 @@ def comment_parser(input_string, version_dict):
                     success = 'yes'
                     break
             search_indice = search_indice + 1
-        query_slice = query[index_of_username_mention:int(search_indice + 1)]
+        query_slice = query[index_of_username_mention:int(search_indice)]
         return query_slice
 # Creates the slice based on where the valid bible version is.
 
@@ -140,22 +140,33 @@ def comment_parser(input_string, version_dict):
         var_check = list(locals())
         for i in ('bible_version_index', 'username_mention_index'):
             if i not in var_check:
+                print('missing a bible version index or username mention index')
                 print(str(i)+' not assigned')
                 bible_version = 'error: no bible book'
                 bible_book = 'error: no chapter verse'
                 bible_chapter_verse = 'error: no chapter verse'
                 final_query_slice = [bible_book, bible_chapter_verse, bible_version]
                 return final_query_slice
-        book_chapter_verse_slice = query_slice[int(username_mention_index+1) : int(bible_version_index)]
+        book_chapter_verse_slice = query_slice[int(username_mention_index+1): int(bible_version_index)]
         for i in book_chapter_verse_slice:
+            i_class = str()
             if '.' in i:
                 bible_chapter_verse = i
                 bible_chapter_verse_index = book_chapter_verse_slice.index(i)
             if ':' in i:
                 bible_chapter_verse = i
                 bible_chapter_verse_index = book_chapter_verse_slice.index(i)
+            try:
+                i_class = str(type(int(i)))
+            except ValueError:
+                dummy = 1
+            if 'int' in i_class:
+                bible_chapter_verse = i
+                bible_chapter_verse_index = book_chapter_verse_slice.index(i)
+            # Turns out, I needed to add a little more checking to get the chapter_verse slice.
         var_check = list(locals())
         if 'bible_chapter_verse_index' not in var_check:
+            print('bible_chapter_verse_index error')
             bible_version = 'error: no bible book'
             bible_book = 'error: no chapter verse'
             bible_chapter_verse = 'error: no chapter verse'
@@ -363,4 +374,3 @@ def query_processor(input_string, requests_object):
     if "ESV" not in input_string.upper():
         final_query = biblia(input_string, requests_object)
     return final_query
-
