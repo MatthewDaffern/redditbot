@@ -29,6 +29,12 @@ def reply_function_and_error_logging(reddit_object,
             response = api_call_function(query, requests_object)
             comment_fullname = comment_fullname_function(i)
             unread_comment = reddit_object.comment(id=comment_fullname)
+            if ": [" in response:
+                response = esv_error_catcher(response)
+            if ":[" in response:
+                response = esv_error_catcher(response)
+            if "{" in response:
+                response = esv_error_catcher(response)
             if 'error' in response:
                 unread_comment.reply(response)
                 i.mark_read()
