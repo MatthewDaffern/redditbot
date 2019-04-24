@@ -448,6 +448,18 @@ def esv_error_catcher(input_string):
                      ' [lutheran insult generator](https://ergofabulous.org/luther/insult-list.php)']
         return str.join('', join_list)
 
+def funny_response():
+	join_list = [insult_generator(),
+                 '\n \n try something like ',
+                 '\n \n `u/scripture_bot``!`` ``John 3:16 KJV`',
+                 ' next time.',
+                 '\n\n***\n',
+                 ' \n \n the above insult is from the',
+                 ' [lutheran insult generator](https://ergofabulous.org/luther/insult-list.php)']
+	return join_list	
+		
+		
+		
 def insult_generator():
     import random
     chosen_one = random.randint(0, 261)

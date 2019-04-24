@@ -35,7 +35,8 @@ def reply_function_and_error_logging(reddit_object,
                 response = esv_error_catcher(response)
             if "{" in response:
                 response = esv_error_catcher(response)
-            if 'error' in response:
+            if 'error:' in response:
+                response = funny_response()
                 unread_comment.reply(response)
                 i.mark_read()
                 return complaint_log(i.author, response)
