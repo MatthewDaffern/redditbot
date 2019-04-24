@@ -73,7 +73,6 @@ def comment_parser(input_string, version_dict):
         while "  " in query:
             query = query.replace('  ', ' ')
         query = query.split(" ")
-        print(str(query)+'is the query')
         return query
 # Creates the initial list object
 
@@ -82,7 +81,7 @@ def comment_parser(input_string, version_dict):
         username_mention = 'scripture_bot!'
         index_of_version = 0
         index_of_username_mention = 0
-        cleaned_version = 'KJV'
+        cleaned_version = 'blargh'
         for i in list_input:
             for version in available_bible_versions:
                 if version in i:
@@ -93,14 +92,12 @@ def comment_parser(input_string, version_dict):
         list_input[index_of_username_mention] = username_mention
         list_input[index_of_version] = cleaned_version
         cleaned_list = list_input
-        print(str(cleaned_list) + 'is the cleaned_list')
         return cleaned_list
 # Removes the \n characters that were messing me up.
 
     def index_of_username_mention_finder(list_input):
         index_of_username_mention = 0
         for i in list_input:
-            print(str(i))
             if 'scripture_bot!' in i:
                 index_of_username_mention = list_input.index(i)
                 break
@@ -131,10 +128,10 @@ def comment_parser(input_string, version_dict):
             for i in list(available_bible_versions):
                 if test in i:
                     success = 'yes'
+                    print(success)
                     break
             search_indice = search_indice + 1
         query_slice = query[index_of_username_mention:int(search_indice)]
-        print(str(query_slice) + 'is the query_slice')
         return query_slice
 # Creates the slice based on where the valid bible version is.
 
@@ -256,7 +253,7 @@ def esv_footer():
     tos_footer1 = '^(this) ^(bot) ^(uses) ^(the) [^(ESV) ^(API)](https://api.esv.org/docs/)'
     tos_footer2 = ' ^(from) [^(Crossway)](https://www.crossway.org/)'
     tos_footer = tos_footer1+tos_footer2
-    github_footer = " ^(|) [^(source code)](https://github.com/matthewdaffern/redditbot])"
+    github_footer = " ^(|) [^(source code)](https://github.com/matthewdaffern/redditbot)"
     msg_the_devs_footer = ' ^(|) [^(message the developers)](https://www.reddit.com/message/compose?to=/r/scripturebot)'
     footer = couple_of_spaces+tos_footer+github_footer+msg_the_devs_footer
     return footer
@@ -299,7 +296,7 @@ def biblia_footer():
     tos_footer1 = "^(this) ^(bot) ^(uses) ^(the) [^(biblia)](https://biblia.com/)"
     tos_footer2 = " ^(web) ^(services) ^(from) [^(Faithlife) ^(Corporation)](https://faithlife.com/about/)"
     tos_footer = tos_footer1+tos_footer2
-    github_footer = " ^(|) [^(source code)](https://github.com/matthewdaffern/redditbot])"
+    github_footer = " ^(|) [^(source code)](https://github.com/matthewdaffern/redditbot)"
     msg_the_devs_footer = ' ^(|) [^(message the developers)](https://www.reddit.com/message/compose?to=/r/scripturebot)'
     footer = couple_of_spaces+tos_footer+github_footer+msg_the_devs_footer
     return footer
@@ -330,7 +327,7 @@ def api_error_handler(response_builder):
 
 
 def full_comment_string(input_string, response_body, footer_input):
-    if 'error' in input_string:
+    if 'error:' in input_string.lower():
         return input_string
     # input string is the string initially used to make the api call.
     reconverted_query = comment_parser(input_string, available_versions())
@@ -350,7 +347,8 @@ def full_comment_string(input_string, response_body, footer_input):
 
 
 def biblia(input_string, requests_object):
-    if 'error' in input_string:
+    print(str(input_string) + ' is the input object')
+    if 'error:' in input_string.lower():
         return input_string
     # higher level biblia function. Performs all biblia functionality and packages it neatly
     api_call = requests_object
@@ -367,7 +365,7 @@ def biblia(input_string, requests_object):
 
 
 def esv(input_string, requests_object):
-    if 'error' in input_string:
+    if 'error:' in input_string.lower():
         return input_string
     # higher level ESV function. Performs all ESV functionality and packages it neatly
     api_call = requests_object
@@ -390,27 +388,38 @@ def esv(input_string, requests_object):
 
 
 def requests_object_caller(input_string):
-    if 'error' in input_string:
+    print(str(input_string) + ' is the requests object')
+    if 'error:' in input_string.lower():
         return input_string
     api_call = "ERROR: API call not processed\n\n"
-    if "ESV" in input_string.upper():
-        api_call = esv_response_builder(comment_parser(input_string, available_versions()), esv_api_key_storage())
-    if "ESV" not in input_string.upper():
-        api_call = biblia_response_builder(comment_parser(input_string, available_versions()), biblia_api_key_storage())
+    parsed_comment = comment_parser(input_string, available_versions())
+    parsed_comment_upper = list(map(lambda x: x.upper(), parsed_comment))
+    parsed_comment_string = str.join(' ', parsed_comment_upper)
+    print('the checked requests comment is: \n' + parsed_comment_string)
+    if "ESV" in parsed_comment_string:
+        api_call = esv_response_builder(parsed_comment, esv_api_key_storage())
+    if "ESV" not in parsed_comment_string:
+        api_call = biblia_response_builder(parsed_comment, biblia_api_key_storage())
     if 'ERROR' in api_call:
         return log.log_wrapper(api_call)
+    print(api_call)
     return api_call
 
 
 def query_processor(input_string, requests_object):
-    if 'error' in input_string:
+    print(str(input_string) + ' is the query')
+    if 'error:' in input_string.lower():
         return input_string
     final_query = "ERROR: Query not processed\n\n"
-    if 'error' in requests_object:
+    parsed_comment = comment_parser(input_string, available_versions())
+    parsed_comment_upper = list(map(lambda x: x.upper(), parsed_comment))
+    parsed_comment_string = str.join(' ', parsed_comment_upper)
+    print('the checked comment is: \n' + parsed_comment_string)
+    if 'error' in parsed_comment_string:
         return requests_object
-    if "ESV" in input_string.upper():
+    if "ESV" in parsed_comment_string:
         final_query = esv(input_string, requests_object)
-    if "ESV" not in input_string.upper():
+    if "ESV" not in parsed_comment_string:
         final_query = biblia(input_string, requests_object)
     return final_query
 
@@ -456,7 +465,7 @@ def funny_response():
                  '\n\n***\n',
                  ' \n \n the above insult is from the',
                  ' [lutheran insult generator](https://ergofabulous.org/luther/insult-list.php)']
-	return join_list	
+	return str.join('', join_list)	
 		
 		
 		

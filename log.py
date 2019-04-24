@@ -126,7 +126,7 @@ def http_non_200(http_response_input):
 
 def length_checker(final_comment):
     if len(final_comment) > 8000:
-        return "error:your request could not be fulfilled because it's over 8, 000 characters.\n\n"
+        return "error:your request could not be fulfilled because it's over 8,000 characters.\n\n"
     else:
         return "success"
 
@@ -157,6 +157,7 @@ def complaint_log(author_object,  response):
                             str(author_object), 
                             '\n \n and the following error was raised ', 
                             response]
+    print(complaint_error_list)
     complaint_error = str.join('',  complaint_error_list)
     print(complaint_error)
     return complaint_error

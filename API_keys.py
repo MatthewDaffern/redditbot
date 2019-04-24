@@ -1,26 +1,7 @@
 
 
 def biblia():
-    bibliakeyfile = open('config_file', 'r')
-    key = str()
-    bibliakey = list(bibliakeyfile.readlines())
-    for i in bibliakey:
-        if 'biblia' in str(i):
-            keytextline = str(i)
-            keytextline = keytextline.split(": ")
-            key = keytextline[1]
-            key = key.replace('\n','')
-    return key
-
+    return 'B002d04d9fed758b52c22e1900181844'
 
 def esv():
-    esvkeyfile = open('config_file', 'r')
-    esvkey = list(esvkeyfile.readlines())
-    key = str()
-    for i in esvkey:
-        if 'esv' in str(i):
-            keytextline = str(i)
-            keytextline = keytextline.split(": ")
-            key = keytextline[1]
-            key = key.replace('\n', '')
-    return key
+    return '6b54963c1ab317b2a52355438d71ed8386bcdaf5'

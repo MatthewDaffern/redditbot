@@ -40,6 +40,11 @@ def reply_function_and_error_logging(reddit_object,
                 unread_comment.reply(response)
                 i.mark_read()
                 return complaint_log(i.author, response)
+            if '8000' in response:
+                response = 'Try being better at quoting. Your request was over 8,000 characters.'
+                unread_comment.reply(response)
+                i.mark_read()
+                return complaint_log(i.author, response)
             if 'error' not in response:
                 unread_comment.reply(response)
                 i.save()
