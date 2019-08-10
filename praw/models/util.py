@@ -41,7 +41,7 @@ class ExponentialCounter(object):
 
     def counter(self):
         """Increment the counter and return the current value with jitter."""
-        max_jitter = self._base / 16.
+        max_jitter = self._base / 16.0
         value = self._base + random.random() * max_jitter - max_jitter / 2
         self._base = min(self._base * 2, self._max)
         return value
@@ -67,16 +67,22 @@ def permissions_string(permissions, known_permissions):
     """
     to_set = []
     if permissions is None:
-        to_set = ['+all']
+        to_set = ["+all"]
     else:
-        to_set = ['-all']
+        to_set = ["-all"]
         omitted = sorted(known_permissions - set(permissions))
-        to_set.extend('-{}'.format(x) for x in omitted)
-        to_set.extend('+{}'.format(x) for x in permissions)
-    return ','.join(to_set)
+        to_set.extend("-{}".format(x) for x in omitted)
+        to_set.extend("+{}".format(x) for x in permissions)
+    return ",".join(to_set)
 
 
-def stream_generator(function, pause_after=None, skip_existing=False):
+def stream_generator(
+    function,
+    pause_after=None,
+    skip_existing=False,
+    attribute_name="fullname",
+    **function_kwargs
+):
     """Yield new items from ListingGenerators and ``None`` when paused.
 
     :param function: A callable that returns a ListingGenerator, e.g.
@@ -93,6 +99,10 @@ def stream_generator(function, pause_after=None, skip_existing=False):
     :param skip_existing: When True does not yield any results from the first
         request thereby skipping any items that existed in the stream prior to
         starting the stream (default: False).
+
+    :param attribute_name: The field to use as an id (default: "fullname").
+
+    Additional keyword arguments will be passed to ``function``.
 
     .. note:: This function internally uses an exponential delay with jitter
        between subsequent responses that contain no new results, up to a
@@ -151,29 +161,37 @@ def stream_generator(function, pause_after=None, skip_existing=False):
            print(comment)
 
     """
-    before_fullname = None
+    before_attribute = None
     exponential_counter = ExponentialCounter(max_counter=16)
-    seen_fullnames = BoundedSet(301)
+    seen_attributes = BoundedSet(301)
     without_before_counter = 0
     responses_without_new = 0
     valid_pause_after = pause_after is not None
     while True:
         found = False
-        newest_fullname = None
+        newest_attribute = None
         limit = 100
-        if before_fullname is None:
+        if before_attribute is None:
             limit -= without_before_counter
             without_before_counter = (without_before_counter + 1) % 30
-        for item in reversed(list(function(
-                limit=limit, params={'before': before_fullname}))):
-            if item.fullname in seen_fullnames:
+        for item in reversed(
+            list(
+                function(
+                    limit=limit,
+                    params={"before": before_attribute},
+                    **function_kwargs
+                )
+            )
+        ):
+            attribute = getattr(item, attribute_name)
+            if attribute in seen_attributes:
                 continue
             found = True
-            seen_fullnames.add(item.fullname)
-            newest_fullname = item.fullname
+            seen_attributes.add(attribute)
+            newest_attribute = attribute
             if not skip_existing:
                 yield item
-        before_fullname = newest_fullname
+        before_attribute = newest_attribute
         skip_existing = False
         if valid_pause_after and pause_after < 0:
             yield None

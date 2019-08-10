@@ -13,10 +13,10 @@ class BaseList(PRAWBase):
         :param reddit: An instance of :class:`~.Reddit`.
 
         """
-        super(BaseList, self).__init__(reddit, _data)
+        super(BaseList, self).__init__(reddit, _data=_data)
 
         if self.CHILD_ATTRIBUTE is None:
-            raise NotImplementedError('BaseList must be extended.')
+            raise NotImplementedError("BaseList must be extended.")
 
         child_list = getattr(self, self.CHILD_ATTRIBUTE)
         for index, item in enumerate(child_list):

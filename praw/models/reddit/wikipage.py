@@ -1,37 +1,66 @@
 """Provide the WikiPage class."""
 from ...const import API_PATH
+from ...util.cache import cachedproperty
 from ..listing.generator import ListingGenerator
 from .base import RedditBase
 from .redditor import Redditor
 
 
 class WikiPage(RedditBase):
-    """An individual WikiPage object."""
+    """An individual WikiPage object.
+
+    **Typical Attributes**
+
+    This table describes attributes that typically belong to objects of this
+    class. Since attributes are dynamically provided (see
+    :ref:`determine-available-attributes-of-an-object`), there is not a
+    guarantee that these attributes will always be present, nor is this list
+    necessarily comprehensive.
+
+    ======================= ===================================================
+    Attribute               Description
+    ======================= ===================================================
+    ``content_html``        The contents of the wiki page, as HTML.
+    ``content_md``          The contents of the wiki page, as Markdown.
+    ``may_revise``          A ``bool`` representing whether or not the
+                            authenticated user may edit the wiki page.
+    ``name``                The name of the wiki page.
+    ``revision_by``         The :class:`.Redditor` who authored this
+                            revision of the wiki page.
+    ``revision_date``       The time of this revision, in `Unix Time`_.
+    ``subreddit``           The :class:`.Subreddit` this wiki page belongs to.
+    ======================= ===================================================
+
+    .. _Unix Time: https://en.wikipedia.org/wiki/Unix_time
+    """
 
     __hash__ = RedditBase.__hash__
 
     @staticmethod
     def _revision_generator(subreddit, url, generator_kwargs):
-        for revision in ListingGenerator(subreddit._reddit, url,
-                                         **generator_kwargs):
-            if revision['author'] is not None:
-                revision['author'] = Redditor(subreddit._reddit,
-                                              _data=revision['author']['data'])
-            revision['page'] = WikiPage(subreddit._reddit, subreddit,
-                                        revision['page'], revision['id'])
+        for revision in ListingGenerator(
+            subreddit._reddit, url, **generator_kwargs
+        ):
+            if revision["author"] is not None:
+                revision["author"] = Redditor(
+                    subreddit._reddit, _data=revision["author"]["data"]
+                )
+            revision["page"] = WikiPage(
+                subreddit._reddit, subreddit, revision["page"], revision["id"]
+            )
             yield revision
 
-    @property
+    @cachedproperty
     def mod(self):
         """Provide an instance of :class:`.WikiPageModeration`."""
-        if self._mod is None:
-            self._mod = WikiPageModeration(self)
-        return self._mod
+        return WikiPageModeration(self)
 
     def __eq__(self, other):
         """Return whether the other instance equals the current."""
-        return isinstance(other, self.__class__) and \
-            str(self).lower() == str(other).lower()
+        return (
+            isinstance(other, self.__class__)
+            and str(self).lower() == str(other).lower()
+        )
 
     def __init__(self, reddit, subreddit, name, revision=None, _data=None):
         """Construct an instance of the WikiPage object.
@@ -43,30 +72,39 @@ class WikiPage(RedditBase):
         self.name = name
         self._revision = revision
         self.subreddit = subreddit
-        super(WikiPage, self).__init__(reddit, _data)
-        self._mod = None
+        super(WikiPage, self).__init__(reddit, _data=_data)
 
     def __repr__(self):
         """Return an object initialization representation of the instance."""
-        return '{}(subreddit={!r}, name={!r})'.format(
-            self.__class__.__name__, self.subreddit, self.name)
+        return "{}(subreddit={!r}, name={!r})".format(
+            self.__class__.__name__, self.subreddit, self.name
+        )
 
     def __str__(self):
         """Return a string representation of the instance."""
-        return '{}/{}'.format(self.subreddit, self.name)
+        return "{}/{}".format(self.subreddit, self.name)
+
+    def _fetch_info(self):
+        return (
+            "wiki_page",
+            {"subreddit": self.subreddit, "page": self.name},
+            {"v": self._revision} if self._revision else None,
+        )
+
+    def _fetch_data(self):
+        name, fields, params = self._fetch_info()
+        path = API_PATH[name].format(**fields)
+        return self._reddit.request("GET", path, params)
 
     def _fetch(self):
-        params = {'v': self._revision} if self._revision else None
-        data = self._reddit.get(self._info_path(), params=params)['data']
-        if data['revision_by'] is not None:
-            data['revision_by'] = Redditor(self._reddit,
-                                           _data=data['revision_by']['data'])
+        data = self._fetch_data()
+        data = data["data"]
+        if data["revision_by"] is not None:
+            data["revision_by"] = Redditor(
+                self._reddit, _data=data["revision_by"]["data"]
+            )
         self.__dict__.update(data)
         self._fetched = True
-
-    def _info_path(self):
-        return API_PATH['wiki_page'].format(subreddit=self.subreddit,
-                                            page=self.name)
 
     def edit(self, content, reason=None, **other_settings):
         """Edit this WikiPage's contents.
@@ -76,10 +114,13 @@ class WikiPage(RedditBase):
         :param other_settings: Additional keyword arguments to pass.
 
         """
-        other_settings.update({'content': content, 'page': self.name,
-                               'reason': reason})
-        self._reddit.post(API_PATH['wiki_edit'].format(
-            subreddit=self.subreddit), data=other_settings)
+        other_settings.update(
+            {"content": content, "page": self.name, "reason": reason}
+        )
+        self._reddit.post(
+            API_PATH["wiki_edit"].format(subreddit=self.subreddit),
+            data=other_settings,
+        )
 
     def revision(self, revision):
         """Return a specific version of this page by revision ID.
@@ -91,8 +132,9 @@ class WikiPage(RedditBase):
            page = reddit.subreddit('test').wiki['praw_test'].revision('[ID]')
 
         """
-        return WikiPage(self.subreddit._reddit, self.subreddit, self.name,
-                        revision)
+        return WikiPage(
+            self.subreddit._reddit, self.subreddit, self.name, revision
+        )
 
     def revisions(self, **generator_kwargs):
         """Return a generator for page revisions.
@@ -115,8 +157,9 @@ class WikiPage(RedditBase):
                print(item['page'])
 
         """
-        url = API_PATH['wiki_page_revisions'].format(subreddit=self.subreddit,
-                                                     page=self.name)
+        url = API_PATH["wiki_page_revisions"].format(
+            subreddit=self.subreddit, page=self.name
+        )
         return self._revision_generator(self.subreddit, url, generator_kwargs)
 
 
@@ -144,9 +187,10 @@ class WikiPageModeration(object):
            reddit.subreddit('test').wiki['praw_test'].mod.add('spez')
 
         """
-        data = {'page': self.wikipage.name, 'username': str(redditor)}
-        url = API_PATH['wiki_page_editor'].format(
-            subreddit=self.wikipage.subreddit, method='add')
+        data = {"page": self.wikipage.name, "username": str(redditor)}
+        url = API_PATH["wiki_page_editor"].format(
+            subreddit=self.wikipage.subreddit, method="add"
+        )
         self.wikipage._reddit.post(url, data=data)
 
     def remove(self, redditor):
@@ -162,16 +206,18 @@ class WikiPageModeration(object):
            reddit.subreddit('test').wiki['praw_test'].mod.remove('spez')
 
         """
-        data = {'page': self.wikipage.name, 'username': str(redditor)}
-        url = API_PATH['wiki_page_editor'].format(
-            subreddit=self.wikipage.subreddit, method='del')
+        data = {"page": self.wikipage.name, "username": str(redditor)}
+        url = API_PATH["wiki_page_editor"].format(
+            subreddit=self.wikipage.subreddit, method="del"
+        )
         self.wikipage._reddit.post(url, data=data)
 
     def settings(self):
         """Return the settings for this WikiPage."""
-        url = API_PATH['wiki_page_settings'].format(
-            subreddit=self.wikipage.subreddit, page=self.wikipage.name)
-        return self.wikipage._reddit.get(url)['data']
+        url = API_PATH["wiki_page_settings"].format(
+            subreddit=self.wikipage.subreddit, page=self.wikipage.name
+        )
+        return self.wikipage._reddit.get(url)["data"]
 
     def update(self, listed, permlevel, **other_settings):
         """Update the settings for this WikiPage.
@@ -193,7 +239,8 @@ class WikiPageModeration(object):
                                                                  permlevel=2)
 
         """
-        other_settings.update({'listed': listed, 'permlevel': permlevel})
-        url = API_PATH['wiki_page_settings'].format(
-            subreddit=self.wikipage.subreddit, page=self.wikipage.name)
-        return self.wikipage._reddit.post(url, data=other_settings)['data']
+        other_settings.update({"listed": listed, "permlevel": permlevel})
+        url = API_PATH["wiki_page_settings"].format(
+            subreddit=self.wikipage.subreddit, page=self.wikipage.name
+        )
+        return self.wikipage._reddit.post(url, data=other_settings)["data"]

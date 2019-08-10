@@ -1,5 +1,5 @@
 """Provide the GildedListingMixin class."""
-from ....const import urljoin
+from ....compat import urljoin
 from ...base import PRAWBase
 from ..generator import ListingGenerator
 
@@ -14,5 +14,6 @@ class GildedListingMixin(PRAWBase):
         :class:`.ListingGenerator`.
 
         """
-        return ListingGenerator(self._reddit, urljoin(self._path, 'gilded'),
-                                **generator_kwargs)
+        return ListingGenerator(
+            self._reddit, urljoin(self._path, "gilded"), **generator_kwargs
+        )

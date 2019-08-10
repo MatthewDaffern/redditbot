@@ -29,13 +29,13 @@ class ListingGenerator(PRAWBase):
             parameters to send with the request.
 
         """
-        super(ListingGenerator, self).__init__(reddit, None)
+        super(ListingGenerator, self).__init__(reddit, _data=None)
         self._exhausted = False
         self._listing = None
         self._list_index = None
         self.limit = limit
         self.params = deepcopy(params) if params else {}
-        self.params['limit'] = limit or 1024
+        self.params["limit"] = limit or 1024
         self.url = url
         self.yielded = 0
 
@@ -69,9 +69,10 @@ class ListingGenerator(PRAWBase):
         if not self._listing:
             raise StopIteration()
 
-        if (self._listing.after and
-                self._listing.after != self.params.get('after')):
-            self.params['after'] = self._listing.after
+        if self._listing.after and self._listing.after != self.params.get(
+            "after"
+        ):
+            self.params["after"] = self._listing.after
         else:
             self._exhausted = True
 
