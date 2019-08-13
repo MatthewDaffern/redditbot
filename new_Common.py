@@ -1,4 +1,4 @@
-import re, requests, log, API_keys, time, random, functools, itertools
+import re, requests, log, API_keys, time, random, functools, itertools, json
 
 def query_picker(input_string, list_of_patterns):
     result = str()
@@ -44,6 +44,11 @@ curl --request GET \
 --header '***'
 '''
 # ==================================================================================================================================================
+
+def dynamo_bible_lookup(dynamo_query_object, version_input):
+    #I'll need my API enabled to do more testing. I really don't know much at this point.
+    return 
+
 
 def response_builder(query, api_key):
     rate_limiter()
