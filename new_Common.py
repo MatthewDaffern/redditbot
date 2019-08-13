@@ -1,4 +1,4 @@
-import re, requests, log, API_keys, time, random, functools, itertools, json
+import re, requests, log, API_keys, time, random, functools, itertools, json, boto
 
 def query_picker(input_string, list_of_patterns):
     result = str()
