@@ -5,10 +5,16 @@ def config_loader(json_input):
     return json.load(json_file)
 
 
-def api_bible_json_getter(config, rest_api_input):
+def api_bible_json_getter(config, api_key):
     headers = {'api-key': str(api_key)}
     requests.get('https://api.scripture.api.bible/v1/bibles', headers=headers)
     return requests.text
+
+def api_chapter_json_getter(config, api_key):
+    headers = {'api-key': str(api_key)}
+    requests.get('https://api.scripture.api.bible/v1/bibles', headers=headers)
+    return requests.text
+
 
 
 def rest_text_to_json_list(rest_api_input):
@@ -33,6 +39,12 @@ def create_table_if_none_exists(boto_instance, table_name, table_config):
     else:
         return table_name
 
+
+def chapter_request()
+
+
+
 def key_collection(boto_instance, table_name, item_to_add):
     # create a list of ids
     # make sure they match
+    boto_instance.put_item(TableName=table_name, Item=item_to_add)
