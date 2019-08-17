@@ -36,9 +36,9 @@ def verse_slice(input_string):
 def neatify_string_to_list(input_string):
     clean_brackets = input_string.replace('[','')\
                                  .replace(']','')
-    return input_string.split(',')
+    return clean_brackets.split(' ')
 
-
+"[Luke 24:1-5 KJV]"
 
 '''
 curl --request GET \
@@ -52,11 +52,39 @@ def dynamo_bible_lookup(dynamo_query_object, version_input):
     return 
 
 
+def versions_transformer(query, versions_dict):
+    if query[2] not in versions_dict.keys():
+        query[2] = 'version not found'
+        return query
+    else:
+        query[2] = versions_dict[query[2]]
+        return query
 
+def book_transformer(query, book_dict):
+    if query[0] not in book_dict.keys():
+        query[0] = 'chapter not found'
+        return query
+    else:
+        query[0] = book_dict[query[0]]
+        return query
+
+def verse_transformer(query):
+    verse = query[1]
+    if ':' in verse:
+        verse = verse.split(':')  
+        if '-' in verse[1]:
+            passage = verse[1].split('-')
+            verse = str.join('', (query[0], '.', verse[0], '.', passage[0], '-', '.', verse[0], '.', passage[1]))
+        else:
+            verse = str.join('', (query[0], '.', verse[0], '.', verse[1]))
+        return [query[1], verse]
+    else:
+        query[2] = 'malformed verse request'
+        return query
 
 def response_builder(query, api_key):
     rate_limiter()
-    url = ["https://api.scripture.api.bible/v1/bibles/", books.book_get(Book_ID), "/verses/", verses.verses_get(Verse_ID)]
+    url = ["https://api.scripture.api.bible/v1/bibles/", query[0], "/passages/", query[1]]
     querystring = {"content-type":"text",
                    "include-notes":"false",
                    "include-titles":"false",
@@ -67,6 +95,8 @@ def response_builder(query, api_key):
     headers = {'api-key': str(api_key)}
     api_call = requests.get(str.join('',url), headers=headers, params=querystring)
     return api_call
+
+
 
 def footer():
     footer_list = ["\n\n***\n",
@@ -81,47 +111,24 @@ def config_loader(json_input):
     return json.load(json_file)
 
 
-def api_bible_json_getter(config, api_key):
-    headers = {'api-key': str(api_key)}
-    requests.get('https://api.scripture.api.bible/v1/bibles', headers=headers)
-    return requests.text
-
 def rest_text_to_json_list(rest_api_input):
     json_object = json.loads(rest_api_input)
     return json_object['data']
 
-def check_for_table_existence(boto_instance, table_name):
-    tables = boto_instance.list_tables()
-    if table_name in tables.values():
-        return table_name:
-    else:
-        return None
-
-def create_table_if_none_exists(boto_instance, table_name, table_config):
-    if table_name == None:
-        boto_instance.create_table(TableName=table_name, 
-                                   KeySchema=table_config['KeySchema'],
-                                   AttributeDefinitions=table_config['AttributeDefinitions'],
-                                   ProvisionedThroughput=table_config['ProvisionedThroughput'])
-        boto_instance.meta.client.get_waiter('table_exists').wait(TableName=table_name)
-        return table_name
-    else:
-        return table_name
+def comment_creator(json_input, dev_footer):
+    return str.join('', (json_input[reference], '\n\n', json_input[content], '\n\n', json_input[copyright], '"\n\n***\n"', dev_footer))
 
 
 # Rest API format is:
 # "https://api.scripture.api.bible/v1/bibles/#bibleID/verses/Luk.24.2" I should create a dict with the bibles I intend to support. The verse code is fairly easy,
 # I just need to use another dict.
 
+#url = "https://api.scripture.api.bible/v1/bibles/bible_id/passages/Luk.12.12-Luk.12.14" workable format.
 
 
-def key_collection(boto_instance, table_name, item_to_add):
-    # create a list of ids
-    # make sure they match
-    boto_instance.put_item(TableName=table_name, Item=item_to_add)
 
 
-    # ==================================================================================================================================================
+# ==================================================================================================================================================
 
 
 def insult_generator():
