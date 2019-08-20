@@ -1,6 +1,6 @@
 import re, requests, log, API_keys, time, random, functools, itertools, json, boto
 
-import books, verses
+import books, versions
 
 def query_picker(input_string, list_of_patterns):
     result = str()
@@ -37,6 +37,12 @@ def neatify_string_to_list(input_string):
     clean_brackets = input_string.replace('[','')\
                                  .replace(']','')
     return clean_brackets.split(' ')
+# ==================================================================================================================================================
+# curry the above to create a series of lists for processing
+
+def reference_iterator(input_string):
+    return list(map(neatify_string_to_list, verse_slice(input_string)))
+
 
 "[Luke 24:1-5 KJV]"
 
@@ -46,11 +52,7 @@ curl --request GET \
 --header '***'
 '''
 # ==================================================================================================================================================
-
-def dynamo_bible_lookup(dynamo_query_object, version_input):
-    #I'll need my API enabled to do more testing. I really don't know much at this point.
-    return 
-
+# error catching functions
 
 def versions_transformer(query, versions_dict):
     if query[2] not in versions_dict.keys():
@@ -81,6 +83,19 @@ def verse_transformer(query):
     else:
         query[2] = 'malformed verse request'
         return query
+# ==================================================================================================================================================
+
+def query_transformer(input_list):
+    versions = versions.versions_dict()
+    books = books.books_dict()
+    versions_transformer_partial = functools.partial(versions_transformer, versions_dict=versions)
+    book_transformer_partial = functools.partial(book_transformer, book_dict=books)
+    return versions_transformer(query=book_transformer(query=verse_transformer(input_list)))
+
+
+# ==================================================================================================================================================
+
+
 
 def response_builder(query, api_key):
     rate_limiter()
@@ -96,7 +111,13 @@ def response_builder(query, api_key):
     api_call = requests.get(str.join('',url), headers=headers, params=querystring)
     return api_call
 
-
+def error_code_handler(json_input):
+    if json_input['statusCode'] is not '200':
+        json_input['copyright'] = ''
+        json_input['content'] = str.join('', (json_input['error'], '\n',   json_input['message'])
+        return json_input
+    else:
+        return json_input
 
 def footer():
     footer_list = ["\n\n***\n",
@@ -115,9 +136,23 @@ def rest_text_to_json_list(rest_api_input):
     json_object = json.loads(rest_api_input)
     return json_object['data']
 
-def comment_creator(json_input, dev_footer):
-    return str.join('', (json_input[reference], '\n\n', json_input[content], '\n\n', json_input[copyright], '"\n\n***\n"', dev_footer))
 
+def comment_creator(json_input):
+    return str.join('', (json_input['reference'], '\n\n', json_input['content'], '\n\n', json_input['copyright'], '"\n\n***\n"'))
+
+def add_footer(content, dev_footer):
+    json_input['dev_footer'] = dev_footer
+    return str.join('', (content,'"\n\n***\n"', dev_footer))
+# ==================================================================================================================================================
+# this is where you map your API calls over your valid list of queries.
+def multiple_response_handler(input_list):
+    return str.join(list(map()))
+
+def section_too_long(processed_comment):
+    if len(processed_comment) > 8000:
+        return str.join('', ('Your query exceeds 8000 characters', '"\n\n***\n"' ,footer()))
+    else: 
+        return query
 
 # Rest API format is:
 # "https://api.scripture.api.bible/v1/bibles/#bibleID/verses/Luk.24.2" I should create a dict with the bibles I intend to support. The verse code is fairly easy,
