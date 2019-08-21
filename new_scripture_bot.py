@@ -1,6 +1,6 @@
 from Common import *
 from log import *
-
+import new_Common
 
 def fullname_creator(comment_object):
     initial_fullname = str(comment_object.fullname)
@@ -9,11 +9,8 @@ def fullname_creator(comment_object):
     return final_fullname
 
 
-def reply_function_and_error_logging(reddit_object,
-                                     comment_fullname_function,
-                                     api_call_function,
-                                     requests_object_caller_func):
-    for i in reddit_object.inbox.unread(limit=None):
+def reply_function(reddit_object, comment_fullname_function, api_call_function):
+    for i in reddit_object.inbox.unread(limit=None)
         list_of_saved = reddit_object.redditor('scripture_bot').saved()
         for comments in list_of_saved:
             if str(i) == str(comments):
@@ -21,35 +18,14 @@ def reply_function_and_error_logging(reddit_object,
         if "scripture_bot!" not in i.body:
             i.mark_read()
             return malformed_request(i.author, i.body, i)
+            i.save()
         if "scripture_bot!" in i.body:
-            query = str(i.body)
-            query_request_logger(i, query)
-            requests_object = requests_object_caller_func(query)
-            api_request_logger(i, requests_object, query)
-            response = api_call_function(query, requests_object)
+            i.mark_read()
             comment_fullname = comment_fullname_function(i)
             unread_comment = reddit_object.comment(id=comment_fullname)
-            if ": [" in response:
-                response = esv_error_catcher(response)
-            if ":[" in response:
-                response = esv_error_catcher(response)
-            if "{" in response:
-                response = esv_error_catcher(response)
-            if 'error:' in response:
-                response = funny_response()
-                unread_comment.reply(response)
-                i.mark_read()
-                return complaint_log(i.author, response)
-            if '8000' in response:
-                response = 'Try being better at quoting. Your request was over 8,000 characters.'
-                unread_comment.reply(response)
-                i.mark_read()
-                return complaint_log(i.author, response)
-            if 'error' not in response:
-                unread_comment.reply(response)
-                i.save()
-                i.mark_read()
-            query_response_logger(i, requests_object, query, response)
+            result = new_Common.command_processor(i.body, api_call_function())
+            unread_comment.reply(result)
+            i.save()
 
 
 def the_actual_bot(authentication, fullname_creator_func, reply_function):
@@ -60,7 +36,7 @@ def the_actual_bot(authentication, fullname_creator_func, reply_function):
 
 # from authenticator import authenticate
 # while 1 == 1:
-#    the_actual_bot(authenticate(), fullname_creator, reply_function_and_error_logging)
+#    the_actual_bot(authenticate(), fullname_creator, reply_function)
 
 
 # pdb.runcall(the_actual_bot(authenticate(), unread_generator, fullname_creator, reply_function_and_error_logging))

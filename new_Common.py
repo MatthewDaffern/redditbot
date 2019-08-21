@@ -1,44 +1,52 @@
-import re, requests, log, API_keys, time, random, functools, itertools, json, boto
+import re
+import requests
+import random
+import functools
+import json
+import books_dict
+import versions_dict
 
-import books, versions
 
-def query_picker(input_string, list_of_patterns):
-    result = str()
-    for i in list_of_patterns:
-        result = re.match(i, input_string)
-        if result not None:
-            return result
-
-def list_of_patterns():
+def command_options():
     commands = ['.*look up.*',
                 '.*hurt my feelings.*',
                 '.*cow says.*']
+    return commands
+
 
 def command_list():
-    return dict([('look up', return_verse_sections),
-                 ('hurt my feelings', insult_generator),
-                 ('cow says', repeat_after_me)])
+    return dict([(0, return_verse_sections),
+                 (1, insult_generator),
+                 (2, repeat_after_me)])
 
 
-def query(input_string, command_list):
-   query = input_string.split('/u/scripture_bot!')
-   commands = command_list()
-   command_to_perform = query_picker(query[0], list_of_patterns())
-   return command_to_perform(input_string)
-# ==================================================================================================================================================
+def command_processor(input_string, api_key_input):
+    patterns = command_options()
+    commands = command_list()
+    picked_command = str()
+    for i in patterns:
+        if re.match(i, input_string) is not None:
+            picked_command = i.index()
+            break
+        else:
+            picked_command = 1
+    return commands[picked_command](input_string, api_key_input)
 
+# ======================================================================================================================
 
 
 def verse_slice(input_string):
-    pattern = '\[.*\]'
+    pattern = "\[.*\]"
     return re.findall(pattern, input_string)
 
+
 def neatify_string_to_list(input_string):
-    clean_brackets = input_string.replace('[','')\
-                                 .replace(']','')
+    clean_brackets = input_string.replace('[', '')\
+                                 .replace(']', '')
     return clean_brackets.split(' ')
-# ==================================================================================================================================================
+# ======================================================================================================================
 # curry the above to create a series of lists for processing
+
 
 def reference_iterator(input_string):
     return list(map(neatify_string_to_list, verse_slice(input_string)))
@@ -51,73 +59,83 @@ curl --request GET \
 --url https://api.scripture.api.bible/v1/books \
 --header '***'
 '''
-# ==================================================================================================================================================
+# ======================================================================================================================
 # error catching functions
 
-def versions_transformer(query, versions_dict):
-    if query[2] not in versions_dict.keys():
-        query[2] = 'version not found'
-        return query
-    else:
-        query[2] = versions_dict[query[2]]
-        return query
 
-def book_transformer(query, book_dict):
-    if query[0] not in book_dict.keys():
-        query[0] = 'chapter not found'
-        return query
+def versions_transformer(query_input, versions_dict_input):
+    if query_input[2] not in versions_dict_input.keys():
+        query_input[2] = 'version not found'
+        return query_input
     else:
-        query[0] = book_dict[query[0]]
-        return query
+        query_input[2] = versions_dict_input[query_input[2]]
+        return query_input
 
-def verse_transformer(query):
-    verse = query[1]
+
+def book_transformer(query_input, book_dict):
+    if query_input[0] not in book_dict.keys():
+        query_input[0] = 'chapter not found'
+        return query_input
+    else:
+        query_input[0] = book_dict[query_input[0]]
+        return query_input
+
+
+def verse_transformer(query_input):
+    verse = query_input[1]
     if ':' in verse:
         verse = verse.split(':')  
         if '-' in verse[1]:
             passage = verse[1].split('-')
-            verse = str.join('', (query[0], '.', verse[0], '.', passage[0], '-', '.', verse[0], '.', passage[1]))
+            verse = str.join('', (query_input[0], '.',
+                                  verse[0], '.',
+                                  passage[0], '-', '.',
+                                  verse[0], '.',
+                                  passage[1]))
         else:
-            verse = str.join('', (query[0], '.', verse[0], '.', verse[1]))
-        return [query[1], verse]
+            verse = str.join('', (query_input[0], '.',
+                                  verse[0], '.',
+                                  verse[1]))
+        return [query_input[1], verse]
     else:
-        query[2] = 'malformed verse request'
-        return query
-# ==================================================================================================================================================
+        query_input[2] = 'malformed verse request'
+        return query_input
+# ======================================================================================================================
+
 
 def query_transformer(input_list):
-    versions = versions.versions_dict()
-    books = books.books_dict()
+    versions = versions_dict.versions_dict()
+    books = books_dict.books_dict()
     versions_transformer_partial = functools.partial(versions_transformer, versions_dict=versions)
     book_transformer_partial = functools.partial(book_transformer, book_dict=books)
-    return versions_transformer(query=book_transformer(query=verse_transformer(input_list)))
+    return versions_transformer_partial(query=book_transformer_partial(query=verse_transformer(input_list)))
 
 
-# ==================================================================================================================================================
+# ======================================================================================================================
 
 
-
-def response_builder(query, api_key):
-    rate_limiter()
-    url = ["https://api.scripture.api.bible/v1/bibles/", query[0], "/passages/", query[1]]
-    querystring = {"content-type":"text",
-                   "include-notes":"false",
-                   "include-titles":"false",
-                   "include-chapter-numbers":"false",
-                   "include-verse-numbers":"true",
-                   "include-verse-spans":"false",
-                   "use-org-id":"false"}
-    headers = {'api-key': str(api_key)}
-    api_call = requests.get(str.join('',url), headers=headers, params=querystring)
+def response_builder(query_input, api_key): 
+    url = ["https://api.scripture.api.bible/v1/bibles/", query_input[0], "/passages/", query_input[1]]
+    querystring = {"content-type": "text",
+                   "include-notes": "false",
+                   "include-titles": "false",
+                   "include-chapter-numbers": "false",
+                   "include-verse-numbers": "true",
+                   "include-verse-spans": "false",
+                   "use-org-id": "false"}
+    headers = {'api-key':  str(api_key)}
+    api_call = requests.get(str.join('', url), headers=headers, params=querystring)
     return api_call
+
 
 def error_code_handler(json_input):
     if json_input['statusCode'] is not '200':
         json_input['copyright'] = ''
-        json_input['content'] = str.join('', (json_input['error'], '\n',   json_input['message'])
+        json_input['content'] = str.join('', (json_input['error'], '\n',   json_input['message']))
         return json_input
     else:
         return json_input
+
 
 def footer():
     footer_list = ["\n\n***\n",
@@ -125,48 +143,62 @@ def footer():
                    " ^(web) ^(services) ^(from) [^(American) ^(Bible) ^(Society)](https://www.americanbible.org/)",
                    " ^(|) [^(source code)](https://github.com/matthewdaffern/redditbot)",
                    " ^(|) [^(message the developers)](https://www.reddit.com/message/compose?to=/r/scripturebot)"]
-    return str.join('',footer_list)
+    return str.join('', footer_list)
+
 
 def config_loader(json_input):
     json_file = open(json_input, 'r+')
     return json.load(json_file)
 
 
-def rest_text_to_json_list(rest_api_input):
-    json_object = json.loads(rest_api_input)
+def full_response_creator(input_string, api_key):
+    configured_response = functools.partial(response_builder, api_key=api_key)
+    return comment_creator(rest_text_to_json_list(json_input=configured_response(
+                                                  query_input=query_transformer(input_string))))
+
+
+def rest_text_to_json_list(json_input):
+    json_object = json.loads(json_input)
     return json_object['data']
 
 
 def comment_creator(json_input):
-    return str.join('', (json_input['reference'], '\n\n', json_input['content'], '\n\n', json_input['copyright'], '"\n\n***\n"'))
+    return str.join('', (json_input['reference'],
+                         '\n\n', json_input['content'],
+                         '\n\n', json_input['copyright'],
+                         '"\n\n***\n"'))
+
 
 def add_footer(content, dev_footer):
-    json_input['dev_footer'] = dev_footer
-    return str.join('', (content,'"\n\n***\n"', dev_footer))
-# ==================================================================================================================================================
+    content['dev_footer'] = dev_footer
+    return str.join('', (content, '"\n\n***\n"', dev_footer))
+# ======================================================================================================================
 # this is where you map your API calls over your valid list of queries.
-def multiple_response_handler(input_list):
-    return str.join(list(map()))
+
+
+def return_verse_sections(input_list, api_key_input):
+    comment_creator_partial = functools.partial(full_response_creator, api_key_input=api_key_input)
+    comment_results = list(map(lambda x: comment_creator_partial(input_string=x), input_list)) + [footer()]
+    return str.join('', comment_results)
+
 
 def section_too_long(processed_comment):
     if len(processed_comment) > 8000:
-        return str.join('', ('Your query exceeds 8000 characters', '"\n\n***\n"' ,footer()))
+        return str.join('', ('Your query exceeds 8000 characters', '"\n\n***\n"', footer()))
     else: 
-        return query
+        return processed_comment
 
 # Rest API format is:
-# "https://api.scripture.api.bible/v1/bibles/#bibleID/verses/Luk.24.2" I should create a dict with the bibles I intend to support. The verse code is fairly easy,
+# "https://api.scripture.api.bible/v1/bibles/#bibleID/verses/Luk.24.2"
+# I should create a dict with the bibles I intend to support. The verse code is fairly easy,
 # I just need to use another dict.
 
-#url = "https://api.scripture.api.bible/v1/bibles/bible_id/passages/Luk.12.12-Luk.12.14" workable format.
+# url = "https://api.scripture.api.bible/v1/bibles/bible_id/passages/Luk.12.12-Luk.12.14" workable format.
+
+# ======================================================================================================================
 
 
-
-
-# ==================================================================================================================================================
-
-
-def insult_generator():
+def insult_generator(input_string, api_key):
     chosen_one = random.randint(0, 261)
     full_list = list(["You live like simple cattle or irrational pigs and, despite the fact that the gospel has returned, have mastered the fine art of misusing all your freedom.You shameful gluttons and servants of your bellies are better suited to be swineherds and keepers of dogs.",
     "You deserve not only to be given no food to eat, but also to have the dogs set upon you and to be pelted with horse manure.",
@@ -433,7 +465,9 @@ def insult_generator():
                         ' \n \n the above insult is from the',
                         ' [lutheran insult generator](https://ergofabulous.org/luther/insult-list.php)'])
 
-# ==================================================================================================================
+
+# ======================================================================================================================
+
 
 def no_swearing(input_string):
     list_of_patterns = ['f..k.* ',
@@ -442,18 +476,18 @@ def no_swearing(input_string):
                         'd..k.* ',
                         'b..ch.* ',
                         'n.*gg.* ',
-                        'p.ssy* ',
-    ]
+                        'p.ssy* ']
     for i in list_of_patterns:
         if re.match(i, input_string) is not None:
             return "No Swearing please"
     return input_string
 
-def repeat_after_me(input_string):
-    return str.join('',['Cow Says\n\n',
-                        no_swearing(input_string),
-                        '\n \nMOOO MY DEVELOPER SUCKS AT ASCII ART',
-                        '\n\n***\n',
-                        'this is a reference to the linux command cowsay',
-                        'for more information please use `man cowsay` at your terminal'
-])
+
+def repeat_after_me(input_string, api_key):
+    return str.join('', ['Cow Says\n\n',
+                         no_swearing(input_string),
+                         '\n \n MOOO MY DEVELOPER SUCKS AT ASCII ART',
+                         '\n\n***\n',
+                         'this is a reference to the linux command cowsay',
+                         'for more information please use `man cowsay` at your terminal']
+                    )  
