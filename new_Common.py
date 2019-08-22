@@ -36,7 +36,7 @@ def command_processor(input_string, api_key_input):
 
 
 def verse_slice(input_string):
-    pattern = "\[.*\]"
+    pattern = "\[\w{3,20} \d{1,3}:\d{1,3} \w{1,7}\]"
     return re.findall(pattern, input_string)
 
 
@@ -49,6 +49,7 @@ def neatify_string_to_list(input_string):
 
 
 def reference_iterator(input_string):
+    '''curries the neatify and slicer together to make a verse iterable. Requires a string object'''
     return list(map(neatify_string_to_list, verse_slice(input_string)))
 
 
@@ -64,6 +65,8 @@ curl --request GET \
 
 
 def versions_transformer(query_input, versions_dict_input):
+    print(query_input)
+    print(versions_dict_input.keys())
     if query_input[2] not in versions_dict_input.keys():
         query_input[2] = 'version not found'
         return query_input
@@ -73,6 +76,7 @@ def versions_transformer(query_input, versions_dict_input):
 
 
 def book_transformer(query_input, book_dict):
+    print(query_input)
     if query_input[0] not in book_dict.keys():
         query_input[0] = 'chapter not found'
         return query_input
@@ -106,15 +110,15 @@ def verse_transformer(query_input):
 def query_transformer(input_list):
     versions = versions_dict.versions_dict()
     books = books_dict.books_dict()
-    versions_transformer_partial = functools.partial(versions_transformer, versions_dict=versions)
+    versions_transformer_partial = functools.partial(versions_transformer, versions_dict_input=versions)
     book_transformer_partial = functools.partial(book_transformer, book_dict=books)
-    return versions_transformer_partial(query=book_transformer_partial(query=verse_transformer(input_list)))
+    return versions_transformer_partial(query_input=book_transformer_partial(query_input=verse_transformer(input_list)))
 
 
 # ======================================================================================================================
 
 
-def response_builder(query_input, api_key): 
+def response_builder(query_input, api_key_input): 
     url = ["https://api.scripture.api.bible/v1/bibles/", query_input[0], "/passages/", query_input[1]]
     querystring = {"content-type": "text",
                    "include-notes": "false",
@@ -123,7 +127,7 @@ def response_builder(query_input, api_key):
                    "include-verse-numbers": "true",
                    "include-verse-spans": "false",
                    "use-org-id": "false"}
-    headers = {'api-key':  str(api_key)}
+    headers = {'api-key':  str(api_key_input)}
     api_call = requests.get(str.join('', url), headers=headers, params=querystring)
     return api_call
 
@@ -151,8 +155,8 @@ def config_loader(json_input):
     return json.load(json_file)
 
 
-def full_response_creator(input_string, api_key):
-    configured_response = functools.partial(response_builder, api_key=api_key)
+def full_response_creator(input_string, api_key_input):
+    configured_response = functools.partial(response_builder, api_key=api_key_input)
     return comment_creator(rest_text_to_json_list(json_input=configured_response(
                                                   query_input=query_transformer(input_string))))
 
@@ -170,7 +174,6 @@ def comment_creator(json_input):
 
 
 def add_footer(content, dev_footer):
-    content['dev_footer'] = dev_footer
     return str.join('', (content, '"\n\n***\n"', dev_footer))
 # ======================================================================================================================
 # this is where you map your API calls over your valid list of queries.
@@ -198,7 +201,7 @@ def section_too_long(processed_comment):
 # ======================================================================================================================
 
 
-def insult_generator(input_string, api_key):
+def insult_generator(input_string, api_key_input):
     chosen_one = random.randint(0, 261)
     full_list = list(["You live like simple cattle or irrational pigs and, despite the fact that the gospel has returned, have mastered the fine art of misusing all your freedom.You shameful gluttons and servants of your bellies are better suited to be swineherds and keepers of dogs.",
     "You deserve not only to be given no food to eat, but also to have the dogs set upon you and to be pelted with horse manure.",
@@ -483,7 +486,7 @@ def no_swearing(input_string):
     return input_string
 
 
-def repeat_after_me(input_string, api_key):
+def repeat_after_me(input_string, api_key_input):
     return str.join('', ['Cow Says\n\n',
                          no_swearing(input_string),
                          '\n \n MOOO MY DEVELOPER SUCKS AT ASCII ART',
