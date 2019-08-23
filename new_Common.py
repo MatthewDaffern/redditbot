@@ -36,7 +36,7 @@ def command_processor(input_string, api_key_input):
 
 
 def verse_slice(input_string):
-    pattern = "\[\w{3,20} \d{1,3}:\d{1,3} \w{1,7}\]"
+    pattern = "\[\w{3,20} \d{1,3}:\d{1,3}.\d{1,3} \w{1,7}\]"
     return re.findall(pattern, input_string)
 
 
@@ -65,45 +65,46 @@ curl --request GET \
 
 
 def versions_transformer(query_input, versions_dict_input):
-    print(query_input)
-    print(versions_dict_input.keys())
-    if query_input[2] not in versions_dict_input.keys():
-        query_input[2] = 'version not found'
-        return query_input
+    internal_query = query_input
+    if internal_query[2] not in versions_dict_input.keys():
+        internal_query[2] = 'version not found'
+        return internal_query
     else:
-        query_input[2] = versions_dict_input[query_input[2]]
-        return query_input
+        internal_query[2] = versions_dict_input[internal_query[2]]
+        return internal_query
 
 
 def book_transformer(query_input, book_dict):
-    print(query_input)
-    if query_input[0] not in book_dict.keys():
-        query_input[0] = 'chapter not found'
-        return query_input
+    internal_query = query_input
+    if internal_query[0] not in book_dict.keys():
+        internal_query[0] = 'chapter not found'
+        return internal_query
     else:
-        query_input[0] = book_dict[query_input[0]]
-        return query_input
+        internal_query[0] = book_dict[internal_query[0]]
+        return internal_query
 
 
 def verse_transformer(query_input):
-    verse = query_input[1]
+    internal_query = query_input
+    verse = internal_query[1]
     if ':' in verse:
         verse = verse.split(':')  
         if '-' in verse[1]:
             passage = verse[1].split('-')
-            verse = str.join('', (query_input[0], '.',
+            verse = str.join('', (internal_query[0], '.',
                                   verse[0], '.',
-                                  passage[0], '-', '.',
+                                  passage[0], '-',
+                                  internal_query[0], '.',
                                   verse[0], '.',
                                   passage[1]))
         else:
-            verse = str.join('', (query_input[0], '.',
+            verse = str.join('', (internal_query[0], '.',
                                   verse[0], '.',
                                   verse[1]))
-        return [query_input[1], verse]
+        return [internal_query[2], verse]
     else:
-        query_input[2] = 'malformed verse request'
-        return query_input
+        internal_query[2] = 'malformed verse request'
+        return internal_query
 # ======================================================================================================================
 
 
@@ -112,7 +113,7 @@ def query_transformer(input_list):
     books = books_dict.books_dict()
     versions_transformer_partial = functools.partial(versions_transformer, versions_dict_input=versions)
     book_transformer_partial = functools.partial(book_transformer, book_dict=books)
-    return versions_transformer_partial(query_input=book_transformer_partial(query_input=verse_transformer(input_list)))
+    return verse_transformer(versions_transformer_partial(query_input=book_transformer_partial(query_input=input_list)))
 
 
 # ======================================================================================================================
