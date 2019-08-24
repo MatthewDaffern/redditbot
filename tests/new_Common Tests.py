@@ -1,7 +1,7 @@
 import new_Common
 import books_dict
 import versions_dict
-
+'''
 # testing to make sure I can call the commands
 command_options = new_Common.command_options()
 command_list = new_Common.command_list()
@@ -28,29 +28,41 @@ result = new_Common.verse_slice(selection)
 print(result)
 neatify = new_Common.neatify_string_to_list(result[0])
 
-
-transformed_query = new_Common.query_transformer(neatify)
+malformed_neatify = neatify
+malformed_neatify[0] = 'lol'
+'''
 
 def api():
     api_file = open('api.key', 'r+')
     key = api_file.readlines()[0]
     return key
 
+
 key = api()
 
+input_test = 'ckiks'
+
+
+'''
 print(str.encode(key))
 
 test = new_Common.response_builder(transformed_query, key)
 
-test2 = test.json()
 
-text = new_Common.rest_text_to_json_list(test2)
-comment = new_Common.comment_creator(test)
+text = new_Common.rest_text_to_json_list(test.text)
 
 print(text)
+
+comment = new_Common.comment_creator(text)
+
 print(comment)
+'''
 
+print(new_Common.command_processor(input_test, key))
 
+'''
+print(new_Common.error_code_handler(new_Common.response_builder(malformed_neatify, key)))
+'''
 '''
 print(command_options)
 print(command_list)
@@ -63,23 +75,17 @@ new_Common.versions_transformer(query_input, versions_dict_input)
 new_Common.book_transformer(query_input, book_dict)
 new_Common.verse_transformer(query_input)
 new_Common.query_transformer(input_list)
-'''
-'''
-
-
+new_Common.response_builder(query_input, api_key)
+new_Common.rest_text_to_json_list(test.text)
+new_Common.return_verse_sections(input_list, api_key_input)
+new_Common.full_response_creator(input_string, api_key)
+new_Common.no_swearing(input_string)
+new_Common.repeat_after_me(input_string, api_key)
+new_Common.insult_generator(input_string, api_key)
+new_Common.section_too_long(processed_comment)
 new_Common.error_code_handler(json_input)
-
 new_Common.config_loader(json_input)
 
 
-new_Common.no_swearing(input_string)
-new_Common.section_too_long(processed_comment)
 
-new_Common.insult_generator(input_string, api_key)
-new_Common
-.repeat_after_me(input_string, api_key)
-new_Common.command_processor(input_string, api_key_input)
-new_Common.response_builder(query_input, api_key)
-new_Common.return_verse_sections(input_list, api_key_input)
-new_Common.full_response_creator(input_string, api_key)
 '''

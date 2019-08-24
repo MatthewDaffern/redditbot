@@ -17,7 +17,8 @@ def command_options():
 def command_list():
     return dict([(0, return_verse_sections),
                  (1, insult_generator),
-                 (2, repeat_after_me)])
+                 (2, repeat_after_me),
+                 (3, default_command)])
 
 
 def command_processor(input_string, api_key_input):
@@ -26,21 +27,25 @@ def command_processor(input_string, api_key_input):
     picked_command = str()
     for i in patterns:
         if re.match(i, input_string) is not None:
-            picked_command = i.index()
+            print(re.match(i, input_string))
+            picked_command = patterns.index(i)
             break
         else:
-            picked_command = 1
+            picked_command = 3
     return commands[picked_command](input_string, api_key_input)
 
 # ======================================================================================================================
-
+def default_command(input_string, api_key):
+    return 'MALFORMED COMMAND. PLEASE TRY AGAIN. \n the valid commands are: \n hurt my feelings: gives you a luther insult \n look up [John 3:16 KJV]: gives you a bible reference \n cowsays: repeats after you'
 
 def verse_slice(input_string):
-    pattern = "\[\w{3,20} \d{1,3}:\d{1,3}.\d{1,3} \w{1,7}\]"
+    pattern = "\[\w{3,20} \d{1,3}:\d{1,3}.\d{0,3} \w{1,7}\]"
+    print(re.findall(pattern, input_string))
     return re.findall(pattern, input_string)
 
 
 def neatify_string_to_list(input_string):
+    print(str.encode(input_string))
     clean_brackets = input_string.replace('[', '')\
                                  .replace(']', '')
     return clean_brackets.split(' ')
@@ -75,9 +80,10 @@ def versions_transformer(query_input, versions_dict_input):
 
 
 def book_transformer(query_input, book_dict):
+    print(query_input)
     internal_query = query_input
     if internal_query[0] not in book_dict.keys():
-        internal_query[0] = 'chapter not found'
+        internal_query[0] = books_dict['KJV']
         return internal_query
     else:
         internal_query[0] = book_dict[internal_query[0]]
@@ -133,13 +139,20 @@ def response_builder(query_input, api_key_input):
     return api_call
 
 
-def error_code_handler(json_input):
-    if json_input['statusCode'] is not '200':
-        json_input['copyright'] = ''
-        json_input['content'] = str.join('', (json_input['error'], '\n',   json_input['message']))
-        return json_input
+def error_code_handler(json_input_object):
+    print(type(json_input_object))
+    json_input = json.loads(json_input_object.text)
+    print(type(json_input))
+    if 'statusCode' in json_input.keys():
+        if not json_input['statusCode'] == '200':
+            json_input['copyright'] = ''
+            json_input['reference'] = ''
+            json_input['content'] = str.join('', (json_input['error'], '\n',   json_input['message']))
+            fake_data_holder = dict()
+            fake_data_holder['data'] = json_input
+            return json_input
     else:
-        return json_input
+        return json_input['data']
 
 
 def footer():
@@ -157,13 +170,12 @@ def config_loader(json_input):
 
 
 def full_response_creator(input_string, api_key_input):
-    configured_response = functools.partial(response_builder, api_key=api_key_input)
-    return comment_creator(rest_text_to_json_list(json_input=configured_response(
-                                                  query_input=query_transformer(input_string))))
+    configured_response = functools.partial(response_builder, api_key_input=api_key_input)
+    return comment_creator(error_code_handler(configured_response(query_input=query_transformer(input_string))))
 
 
-def rest_text_to_json_list(json_input):
-    json_object = json.loads(json_input)
+def rest_text_to_json_list(response_json_input):
+    json_object = json.loads(response_json_input.text)
     return json_object['data']
 
 
@@ -180,10 +192,11 @@ def add_footer(content, dev_footer):
 # this is where you map your API calls over your valid list of queries.
 
 
-def return_verse_sections(input_list, api_key_input):
+def return_verse_sections(input_string, api_key_input):
+    verse_list = reference_iterator(input_string)
     comment_creator_partial = functools.partial(full_response_creator, api_key_input=api_key_input)
-    comment_results = list(map(lambda x: comment_creator_partial(input_string=x), input_list)) + [footer()]
-    return str.join('', comment_results)
+    comment_results = list(map(lambda x: comment_creator_partial(input_string=x), verse_list))
+    return str.join('', (comment_results + [footer()]))
 
 
 def section_too_long(processed_comment):
@@ -474,24 +487,25 @@ def insult_generator(input_string, api_key_input):
 
 
 def no_swearing(input_string):
-    list_of_patterns = ['f..k.* ',
-                        's..t.* ',
-                        'ass.* ',
-                        'd..k.* ',
-                        'b..ch.* ',
-                        'n.*gg.* ',
-                        'p.ssy* ']
+    list_of_patterns = [' f.c.* ',
+                        ' s.i.* ',
+                        ' ass.* ',
+                        ' d..k.* ',
+                        ' b..ch.* ',
+                        ' n.*gg.* ',
+                        ' p.s.y* ']
     for i in list_of_patterns:
         if re.match(i, input_string) is not None:
             return "No Swearing please"
     return input_string
 
 
-def repeat_after_me(input_string, api_key_input):
+def repeat_after_me(input_string_object, api_key_input):
+    input_string = input_string_object.replace('cowsays','')
     return str.join('', ['Cow Says\n\n',
                          no_swearing(input_string),
                          '\n \n MOOO MY DEVELOPER SUCKS AT ASCII ART',
                          '\n\n***\n',
-                         'this is a reference to the linux command cowsay',
+                         'this is a reference to the linux command cowsay.\n',
                          'for more information please use `man cowsay` at your terminal']
                     )  
