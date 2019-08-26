@@ -40,7 +40,7 @@ def api():
 
 key = api()
 
-input_test = 'ckiks'
+input_test = 'look up [John 3:16 KJV] [1 Peter 2:5 KJV] [2nd Samuel 3:18 KJV]'
 
 
 '''

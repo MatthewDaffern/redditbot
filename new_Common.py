@@ -39,9 +39,9 @@ def default_command(input_string, api_key):
     return 'MALFORMED COMMAND. PLEASE TRY AGAIN. \n the valid commands are: \n hurt my feelings: gives you a luther insult \n look up [John 3:16 KJV]: gives you a bible reference \n cowsays: repeats after you'
 
 def verse_slice(input_string):
-    pattern = "\[\w{3,20} \d{1,3}:\d{1,3}.\d{0,3} \w{1,7}\]"
-    print(re.findall(pattern, input_string))
-    return re.findall(pattern, input_string)
+    pattern = '\[.{0,15}:.{0,10}\]'
+    match = re.finditer(pattern, input_string)
+    return list(map(lambda x: x.group(0), list(match)))
 
 
 def neatify_string_to_list(input_string):
@@ -80,10 +80,10 @@ def versions_transformer(query_input, versions_dict_input):
 
 
 def book_transformer(query_input, book_dict):
-    print(query_input)
     internal_query = query_input
     if internal_query[0] not in book_dict.keys():
-        internal_query[0] = books_dict['KJV']
+        print(str(internal_query))
+        internal_query[0] = book_dict['KJV']
         return internal_query
     else:
         internal_query[0] = book_dict[internal_query[0]]
@@ -140,9 +140,7 @@ def response_builder(query_input, api_key_input):
 
 
 def error_code_handler(json_input_object):
-    print(type(json_input_object))
     json_input = json.loads(json_input_object.text)
-    print(type(json_input))
     if 'statusCode' in json_input.keys():
         if not json_input['statusCode'] == '200':
             json_input['copyright'] = ''
