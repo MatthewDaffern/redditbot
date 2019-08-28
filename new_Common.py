@@ -71,20 +71,22 @@ curl --request GET \
 
 def versions_transformer(query_input, versions_dict_input):
     for i in list(versions_dict_input.keys()):
-        result = re.search(i, query_input.upper())
+        processed_query = query_input.upper()
+        result = re.search(i, processed_query)
         if result is not None:
             version = versions_dict_input[result.group(0)]
-            reduced_query = query_input.replace(result.group(0), '')
+            reduced_query = processed_query.replace(result.group(0), '')
             return [version, reduced_query]
-    failover_reduced_query = query_input.split(' ')
+    failover_reduced_query = processed_query.split(' ')
     failover_reduced_query = failover_reduced_query.pop(len(failover_reduced_query) - 1)
     return [versions_dict_input['KJV'], str.join('', failover_reduced_query)]
 
 
 def book_transformer(query_input, book_dict_input):
     sample_version = versions_dict.versions_dict()
+    query_input[1] = query_input[1].replace('[', '').replace(']', '').lstrip().rstrip().upper()
     for i in list(book_dict_input.keys()):
-        result = re.search(i, query_input[1].capitalize())
+        result = re.search(i, query_input[1])
         if result is not None:
             book = book_dict_input[result.group(0)]
             reduced_query = query_input[1].replace(result.group(0), '')
@@ -94,8 +96,8 @@ def book_transformer(query_input, book_dict_input):
 
 def verse_transformer(query_input):
     print(query_input)
-    if query_input[2] == 'error book not found':
-        query_input[2] = query_input[2].replace(' ', ".")
+    if query_input[1] == 'error book not found':
+        query_input[1] = query_input[1].replace(' ', ".")
         return query_input
     verse = query_input[2]
     verse = verse.replace('[', '').replace(']', '').lstrip().rstrip()
