@@ -2,6 +2,7 @@ from __future__ import absolute_import
 import datetime
 import logging
 import os
+import sys
 import socket
 from socket import error as SocketError, timeout as SocketTimeout
 import warnings
@@ -19,11 +20,10 @@ except (ImportError, AttributeError):  # Platform-specific: No SSL.
         pass
 
 
-try:
-    # Python 3: not a no-op, we're adding this to the namespace so it can be imported.
+try:  # Python 3:
+    # Not a no-op, we're adding this to the namespace so it can be imported.
     ConnectionError = ConnectionError
-except NameError:
-    # Python 2
+except NameError:  # Python 2:
     class ConnectionError(Exception):
         pass
 
@@ -78,6 +78,9 @@ class HTTPConnection(_HTTPConnection, object):
 
       - ``strict``: See the documentation on :class:`urllib3.connectionpool.HTTPConnectionPool`
       - ``source_address``: Set the source address for the current connection.
+
+        .. note:: This is ignored for Python 2.6. It is only applied for 2.7 and 3.x
+
       - ``socket_options``: Set specific options on the underlying socket. If not specified, then
         defaults are loaded from ``HTTPConnection.default_socket_options`` which includes disabling
         Nagle's algorithm (sets TCP_NODELAY to 1) unless the connection is behind a proxy.
@@ -102,16 +105,24 @@ class HTTPConnection(_HTTPConnection, object):
     is_verified = False
 
     def __init__(self, *args, **kw):
-        if six.PY3:
+        if six.PY3:  # Python 3
             kw.pop('strict', None)
 
-        # Pre-set source_address.
+        # Pre-set source_address in case we have an older Python like 2.6.
         self.source_address = kw.get('source_address')
+
+        if sys.version_info < (2, 7):  # Python 2.6
+            # _HTTPConnection on Python 2.6 will balk at this keyword arg, but
+            # not newer versions. We can still use it when creating a
+            # connection though, so we pop it *after* we have saved it as
+            # self.source_address.
+            kw.pop('source_address', None)
 
         #: The socket options provided by the user. If no options are
         #: provided, we use the default options.
         self.socket_options = kw.pop('socket_options', self.default_socket_options)
 
+        # Superclass also sets self.source_address in Python 2.7+.
         _HTTPConnection.__init__(self, *args, **kw)
 
     @property
@@ -159,7 +170,7 @@ class HTTPConnection(_HTTPConnection, object):
             conn = connection.create_connection(
                 (self._dns_host, self.port), self.timeout, **extra_kw)
 
-        except SocketTimeout:
+        except SocketTimeout as e:
             raise ConnectTimeoutError(
                 self, "Connection to %s timed out. (connect timeout=%s)" %
                 (self.host, self.timeout))
@@ -172,7 +183,9 @@ class HTTPConnection(_HTTPConnection, object):
 
     def _prepare_conn(self, conn):
         self.sock = conn
-        # Google App Engine's httplib does not define _tunnel_host
+        # the _tunnel_host attribute was added in python 2.6.3 (via
+        # http://hg.python.org/cpython/rev/0f57b30a152f) so pythons 2.6(0-2) do
+        # not have them.
         if getattr(self, '_tunnel_host', None):
             # TODO: Fix tunnel so it doesn't depend on self.sock state.
             self._tunnel()
@@ -204,13 +217,13 @@ class HTTPConnection(_HTTPConnection, object):
         self.endheaders()
 
         if body is not None:
-            stringish_types = six.string_types + (bytes,)
+            stringish_types = six.string_types + (six.binary_type,)
             if isinstance(body, stringish_types):
                 body = (body,)
             for chunk in body:
                 if not chunk:
                     continue
-                if not isinstance(chunk, bytes):
+                if not isinstance(chunk, six.binary_type):
                     chunk = chunk.encode('utf8')
                 len_str = hex(len(chunk))[2:]
                 self.send(len_str.encode('utf-8'))
@@ -228,18 +241,15 @@ class HTTPSConnection(HTTPConnection):
     ssl_version = None
 
     def __init__(self, host, port=None, key_file=None, cert_file=None,
-                 key_password=None, strict=None,
-                 timeout=socket._GLOBAL_DEFAULT_TIMEOUT,
-                 ssl_context=None, server_hostname=None, **kw):
+                 strict=None, timeout=socket._GLOBAL_DEFAULT_TIMEOUT,
+                 ssl_context=None, **kw):
 
         HTTPConnection.__init__(self, host, port, strict=strict,
                                 timeout=timeout, **kw)
 
         self.key_file = key_file
         self.cert_file = cert_file
-        self.key_password = key_password
         self.ssl_context = ssl_context
-        self.server_hostname = server_hostname
 
         # Required property for Google AppEngine 1.9.0 which otherwise causes
         # HTTPS requests to go out as HTTP. (See Issue #356)
@@ -249,30 +259,17 @@ class HTTPSConnection(HTTPConnection):
         conn = self._new_conn()
         self._prepare_conn(conn)
 
-        # Wrap socket using verification with the root certs in
-        # trusted_root_certs
-        default_ssl_context = False
         if self.ssl_context is None:
-            default_ssl_context = True
             self.ssl_context = create_urllib3_context(
-                ssl_version=resolve_ssl_version(self.ssl_version),
-                cert_reqs=resolve_cert_reqs(self.cert_reqs),
+                ssl_version=resolve_ssl_version(None),
+                cert_reqs=resolve_cert_reqs(None),
             )
-
-        # Try to load OS default certs if none are given.
-        # Works well on Windows (requires Python3.4+)
-        context = self.ssl_context
-        if (not self.ca_certs and not self.ca_cert_dir and default_ssl_context
-                and hasattr(context, 'load_default_certs')):
-            context.load_default_certs()
 
         self.sock = ssl_wrap_socket(
             sock=conn,
             keyfile=self.key_file,
             certfile=self.cert_file,
-            key_password=self.key_password,
             ssl_context=self.ssl_context,
-            server_hostname=self.server_hostname
         )
 
 
@@ -288,24 +285,25 @@ class VerifiedHTTPSConnection(HTTPSConnection):
     assert_fingerprint = None
 
     def set_cert(self, key_file=None, cert_file=None,
-                 cert_reqs=None, key_password=None, ca_certs=None,
+                 cert_reqs=None, ca_certs=None,
                  assert_hostname=None, assert_fingerprint=None,
                  ca_cert_dir=None):
         """
         This method should only be called once, before the connection is used.
         """
-        # If cert_reqs is not provided we'll assume CERT_REQUIRED unless we also
-        # have an SSLContext object in which case we'll use its verify_mode.
+        # If cert_reqs is not provided, we can try to guess. If the user gave
+        # us a cert database, we assume they want to use it: otherwise, if
+        # they gave us an SSL Context object we should use whatever is set for
+        # it.
         if cert_reqs is None:
-            if self.ssl_context is not None:
+            if ca_certs or ca_cert_dir:
+                cert_reqs = 'CERT_REQUIRED'
+            elif self.ssl_context is not None:
                 cert_reqs = self.ssl_context.verify_mode
-            else:
-                cert_reqs = resolve_cert_reqs(None)
 
         self.key_file = key_file
         self.cert_file = cert_file
         self.cert_reqs = cert_reqs
-        self.key_password = key_password
         self.assert_hostname = assert_hostname
         self.assert_fingerprint = assert_fingerprint
         self.ca_certs = ca_certs and os.path.expanduser(ca_certs)
@@ -314,10 +312,12 @@ class VerifiedHTTPSConnection(HTTPSConnection):
     def connect(self):
         # Add certificate verification
         conn = self._new_conn()
-        hostname = self.host
 
-        # Google App Engine's httplib does not define _tunnel_host
+        hostname = self.host
         if getattr(self, '_tunnel_host', None):
+            # _tunnel_host was added in Python 2.6.3
+            # (See: http://hg.python.org/cpython/rev/0f57b30a152f)
+
             self.sock = conn
             # Calls self._set_hostport(), so self.host is
             # self._tunnel_host below.
@@ -327,10 +327,6 @@ class VerifiedHTTPSConnection(HTTPSConnection):
 
             # Override the host with the one we're requesting data from.
             hostname = self._tunnel_host
-
-        server_hostname = hostname
-        if self.server_hostname is not None:
-            server_hostname = self.server_hostname
 
         is_time_off = datetime.date.today() < RECENT_DATE
         if is_time_off:
@@ -342,9 +338,7 @@ class VerifiedHTTPSConnection(HTTPSConnection):
 
         # Wrap socket using verification with the root certs in
         # trusted_root_certs
-        default_ssl_context = False
         if self.ssl_context is None:
-            default_ssl_context = True
             self.ssl_context = create_urllib3_context(
                 ssl_version=resolve_ssl_version(self.ssl_version),
                 cert_reqs=resolve_cert_reqs(self.cert_reqs),
@@ -352,21 +346,13 @@ class VerifiedHTTPSConnection(HTTPSConnection):
 
         context = self.ssl_context
         context.verify_mode = resolve_cert_reqs(self.cert_reqs)
-
-        # Try to load OS default certs if none are given.
-        # Works well on Windows (requires Python3.4+)
-        if (not self.ca_certs and not self.ca_cert_dir and default_ssl_context
-                and hasattr(context, 'load_default_certs')):
-            context.load_default_certs()
-
         self.sock = ssl_wrap_socket(
             sock=conn,
             keyfile=self.key_file,
             certfile=self.cert_file,
-            key_password=self.key_password,
             ca_certs=self.ca_certs,
             ca_cert_dir=self.ca_cert_dir,
-            server_hostname=server_hostname,
+            server_hostname=hostname,
             ssl_context=context)
 
         if self.assert_fingerprint:
@@ -387,7 +373,7 @@ class VerifiedHTTPSConnection(HTTPSConnection):
                     'for details.)'.format(hostname)),
                     SubjectAltNameWarning
                 )
-            _match_hostname(cert, self.assert_hostname or server_hostname)
+            _match_hostname(cert, self.assert_hostname or hostname)
 
         self.is_verified = (
             context.verify_mode == ssl.CERT_REQUIRED or

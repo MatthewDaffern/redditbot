@@ -1,13 +1,13 @@
 """Provide the BaseListingMixin class."""
-from ....compat import urljoin
+from ....const import urljoin
 from ...base import PRAWBase
 from ..generator import ListingGenerator
 
 
 def _prepare(praw_object, arguments_dict, target):
     """Fix for Redditor methods that use a query param rather than subpath."""
-    if praw_object.__dict__.get("_listing_use_sort"):
-        PRAWBase._safely_add_arguments(arguments_dict, "params", sort=target)
+    if praw_object.__dict__.get('_listing_use_sort'):
+        PRAWBase._safely_add_arguments(arguments_dict, 'params', sort=target)
         return praw_object._path
     return urljoin(praw_object._path, target)
 
@@ -15,19 +15,16 @@ def _prepare(praw_object, arguments_dict, target):
 class BaseListingMixin(PRAWBase):
     """Adds minimum set of methods that apply to all listing objects."""
 
-    VALID_TIME_FILTERS = {"all", "day", "hour", "month", "week", "year"}
+    VALID_TIME_FILTERS = {'all', 'day', 'hour', 'month', 'week', 'year'}
 
     @staticmethod
     def _validate_time_filter(time_filter):
         """Raise :py:class:`.ValueError` if ``time_filter`` is not valid."""
         if time_filter not in BaseListingMixin.VALID_TIME_FILTERS:
-            raise ValueError(
-                "time_filter must be one of: {}".format(
-                    ", ".join(BaseListingMixin.VALID_TIME_FILTERS)
-                )
-            )
+            raise ValueError('time_filter must be one of: {}'.format(', '.join(
+                BaseListingMixin.VALID_TIME_FILTERS)))
 
-    def controversial(self, time_filter="all", **generator_kwargs):
+    def controversial(self, time_filter='all', **generator_kwargs):
         """Return a ListingGenerator for controversial submissions.
 
         :param time_filter: Can be one of: all, day, hour, month, week, year
@@ -51,8 +48,8 @@ class BaseListingMixin(PRAWBase):
 
         """
         self._validate_time_filter(time_filter)
-        self._safely_add_arguments(generator_kwargs, "params", t=time_filter)
-        url = _prepare(self, generator_kwargs, "controversial")
+        self._safely_add_arguments(generator_kwargs, 'params', t=time_filter)
+        url = _prepare(self, generator_kwargs, 'controversial')
         return ListingGenerator(self._reddit, url, **generator_kwargs)
 
     def hot(self, **generator_kwargs):
@@ -73,8 +70,8 @@ class BaseListingMixin(PRAWBase):
            reddit.subreddit('all').hot()
 
         """
-        generator_kwargs.setdefault("params", {})
-        url = _prepare(self, generator_kwargs, "hot")
+        generator_kwargs.setdefault('params', {})
+        url = _prepare(self, generator_kwargs, 'hot')
         return ListingGenerator(self._reddit, url, **generator_kwargs)
 
     def new(self, **generator_kwargs):
@@ -95,11 +92,11 @@ class BaseListingMixin(PRAWBase):
            reddit.subreddit('all').new()
 
         """
-        generator_kwargs.setdefault("params", {})
-        url = _prepare(self, generator_kwargs, "new")
+        generator_kwargs.setdefault('params', {})
+        url = _prepare(self, generator_kwargs, 'new')
         return ListingGenerator(self._reddit, url, **generator_kwargs)
 
-    def top(self, time_filter="all", **generator_kwargs):
+    def top(self, time_filter='all', **generator_kwargs):
         """Return a ListingGenerator for top submissions.
 
         :param time_filter: Can be one of: all, day, hour, month, week, year
@@ -123,6 +120,6 @@ class BaseListingMixin(PRAWBase):
 
         """
         self._validate_time_filter(time_filter)
-        self._safely_add_arguments(generator_kwargs, "params", t=time_filter)
-        url = _prepare(self, generator_kwargs, "top")
+        self._safely_add_arguments(generator_kwargs, 'params', t=time_filter)
+        url = _prepare(self, generator_kwargs, 'top')
         return ListingGenerator(self._reddit, url, **generator_kwargs)

@@ -1,6 +1,5 @@
 """Provide the SubredditListingMixin class."""
-from ....compat import urljoin
-from ....util.cache import cachedproperty
+from ....const import urljoin
 from ...base import PRAWBase
 from ..generator import ListingGenerator
 from .base import BaseListingMixin
@@ -8,12 +7,11 @@ from .gilded import GildedListingMixin
 from .rising import RisingListingMixin
 
 
-class SubredditListingMixin(
-    BaseListingMixin, GildedListingMixin, RisingListingMixin
-):
+class SubredditListingMixin(BaseListingMixin, GildedListingMixin,
+                            RisingListingMixin):
     """Adds additional methods pertaining to Subreddit-like instances."""
 
-    @cachedproperty
+    @property
     def comments(self):
         """Provide an instance of :class:`.CommentHelper`.
 
@@ -26,7 +24,9 @@ class SubredditListingMixin(
                print(comment.author)
 
         """
-        return CommentHelper(self)
+        if self._comments is None:
+            self._comments = CommentHelper(self)
+        return self._comments
 
     def __init__(self, reddit, _data):
         """Initialize a SubredditListingMixin instance.
@@ -34,7 +34,8 @@ class SubredditListingMixin(
         :param reddit: An instance of :class:`.Reddit`.
 
         """
-        super(SubredditListingMixin, self).__init__(reddit, _data=_data)
+        super(SubredditListingMixin, self).__init__(reddit, _data)
+        self._comments = None
 
 
 class CommentHelper(PRAWBase):
@@ -42,11 +43,11 @@ class CommentHelper(PRAWBase):
 
     @property
     def _path(self):
-        return urljoin(self.subreddit._path, "comments/")
+        return urljoin(self.subreddit._path, 'comments/')
 
     def __init__(self, subreddit):
         """Initialize a CommentHelper instance."""
-        super(CommentHelper, self).__init__(subreddit._reddit, _data=None)
+        super(CommentHelper, self).__init__(subreddit._reddit, None)
         self.subreddit = subreddit
 
     def __call__(self, **generator_kwargs):
@@ -64,3 +65,17 @@ class CommentHelper(PRAWBase):
 
         """
         return ListingGenerator(self._reddit, self._path, **generator_kwargs)
+
+    def gilded(self, **generator_kwargs):
+        """Deprecated.
+
+        .. warning:: (Deprecated) This method will be removed in PRAW 6 because
+                     it doesn't actually restrict the results to gilded
+                     Comments. Use ``subreddit.gilded`` instead.
+
+        Additional keyword arguments are passed in the initialization of
+        :class:`.ListingGenerator`.
+
+        """
+        return ListingGenerator(self._reddit, urljoin(self._path, 'gilded'),
+                                **generator_kwargs)

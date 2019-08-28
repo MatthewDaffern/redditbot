@@ -70,7 +70,6 @@ import sys
 
 from .. import util
 
-
 __all__ = ['inject_into_urllib3', 'extract_from_urllib3']
 
 # SNI always works.
@@ -78,12 +77,9 @@ HAS_SNI = True
 
 # Map from urllib3 to PyOpenSSL compatible parameter-values.
 _openssl_versions = {
-    util.PROTOCOL_TLS: OpenSSL.SSL.SSLv23_METHOD,
+    ssl.PROTOCOL_SSLv23: OpenSSL.SSL.SSLv23_METHOD,
     ssl.PROTOCOL_TLSv1: OpenSSL.SSL.TLSv1_METHOD,
 }
-
-if hasattr(ssl, 'PROTOCOL_SSLv3') and hasattr(OpenSSL.SSL, 'SSLv3_METHOD'):
-    _openssl_versions[ssl.PROTOCOL_SSLv3] = OpenSSL.SSL.SSLv3_METHOD
 
 if hasattr(ssl, 'PROTOCOL_TLSv1_1') and hasattr(OpenSSL.SSL, 'TLSv1_1_METHOD'):
     _openssl_versions[ssl.PROTOCOL_TLSv1_1] = OpenSSL.SSL.TLSv1_1_METHOD
@@ -91,6 +87,10 @@ if hasattr(ssl, 'PROTOCOL_TLSv1_1') and hasattr(OpenSSL.SSL, 'TLSv1_1_METHOD'):
 if hasattr(ssl, 'PROTOCOL_TLSv1_2') and hasattr(OpenSSL.SSL, 'TLSv1_2_METHOD'):
     _openssl_versions[ssl.PROTOCOL_TLSv1_2] = OpenSSL.SSL.TLSv1_2_METHOD
 
+try:
+    _openssl_versions.update({ssl.PROTOCOL_SSLv3: OpenSSL.SSL.SSLv3_METHOD})
+except AttributeError:
+    pass
 
 _stdlib_to_openssl_verify = {
     ssl.CERT_NONE: OpenSSL.SSL.VERIFY_NONE,
@@ -117,7 +117,6 @@ def inject_into_urllib3():
 
     _validate_dependencies_met()
 
-    util.SSLContext = PyOpenSSLContext
     util.ssl_.SSLContext = PyOpenSSLContext
     util.HAS_SNI = HAS_SNI
     util.ssl_.HAS_SNI = HAS_SNI
@@ -128,7 +127,6 @@ def inject_into_urllib3():
 def extract_from_urllib3():
     'Undo monkey-patching by :func:`inject_into_urllib3`.'
 
-    util.SSLContext = orig_util_SSLContext
     util.ssl_.SSLContext = orig_util_SSLContext
     util.HAS_SNI = orig_util_HAS_SNI
     util.ssl_.HAS_SNI = orig_util_HAS_SNI
@@ -165,9 +163,6 @@ def _dnsname_to_stdlib(name):
     from ASCII bytes. We need to idna-encode that string to get it back, and
     then on Python 3 we also need to convert to unicode via UTF-8 (the stdlib
     uses PyUnicode_FromStringAndSize on it, which decodes via UTF-8).
-
-    If the name cannot be idna-encoded then we return None signalling that
-    the name given should be skipped.
     """
     def idna_encode(name):
         """
@@ -177,23 +172,14 @@ def _dnsname_to_stdlib(name):
         """
         import idna
 
-        try:
-            for prefix in [u'*.', u'.']:
-                if name.startswith(prefix):
-                    name = name[len(prefix):]
-                    return prefix.encode('ascii') + idna.encode(name)
-            return idna.encode(name)
-        except idna.core.IDNAError:
-            return None
-
-    # Don't send IPv6 addresses through the IDNA encoder.
-    if ':' in name:
-        return name
+        for prefix in [u'*.', u'.']:
+            if name.startswith(prefix):
+                name = name[len(prefix):]
+                return prefix.encode('ascii') + idna.encode(name)
+        return idna.encode(name)
 
     name = idna_encode(name)
-    if name is None:
-        return None
-    elif sys.version_info >= (3, 0):
+    if sys.version_info >= (3, 0):
         name = name.decode('utf-8')
     return name
 
@@ -237,10 +223,9 @@ def get_subj_alt_name(peer_cert):
     # Sadly the DNS names need to be idna encoded and then, on Python 3, UTF-8
     # decoded. This is pretty frustrating, but that's what the standard library
     # does with certificates, and so we need to attempt to do the same.
-    # We also want to skip over names which cannot be idna encoded.
     names = [
-        ('DNS', name) for name in map(_dnsname_to_stdlib, ext.get_values_for_type(x509.DNSName))
-        if name is not None
+        ('DNS', _dnsname_to_stdlib(name))
+        for name in ext.get_values_for_type(x509.DNSName)
     ]
     names.extend(
         ('IP Address', str(name))
@@ -282,7 +267,7 @@ class WrappedSocket(object):
                 return b''
             else:
                 raise SocketError(str(e))
-        except OpenSSL.SSL.ZeroReturnError:
+        except OpenSSL.SSL.ZeroReturnError as e:
             if self.connection.get_shutdown() == OpenSSL.SSL.RECEIVED_SHUTDOWN:
                 return b''
             else:
@@ -292,10 +277,6 @@ class WrappedSocket(object):
                 raise timeout('The read operation timed out')
             else:
                 return self.recv(*args, **kwargs)
-
-        # TLS 1.3 post-handshake authentication
-        except OpenSSL.SSL.Error as e:
-            raise ssl.SSLError("read error: %r" % e)
         else:
             return data
 
@@ -307,7 +288,7 @@ class WrappedSocket(object):
                 return 0
             else:
                 raise SocketError(str(e))
-        except OpenSSL.SSL.ZeroReturnError:
+        except OpenSSL.SSL.ZeroReturnError as e:
             if self.connection.get_shutdown() == OpenSSL.SSL.RECEIVED_SHUTDOWN:
                 return 0
             else:
@@ -317,10 +298,6 @@ class WrappedSocket(object):
                 raise timeout('The read operation timed out')
             else:
                 return self.recv_into(*args, **kwargs)
-
-        # TLS 1.3 post-handshake authentication
-        except OpenSSL.SSL.Error as e:
-            raise ssl.SSLError("read error: %r" % e)
 
     def settimeout(self, timeout):
         return self.socket.settimeout(timeout)
@@ -373,9 +350,6 @@ class WrappedSocket(object):
             ),
             'subjectAltName': get_subj_alt_name(x509)
         }
-
-    def version(self):
-        return self.connection.get_protocol_version_name()
 
     def _reuse(self):
         self._makefile_refs += 1
@@ -449,9 +423,7 @@ class PyOpenSSLContext(object):
     def load_cert_chain(self, certfile, keyfile=None, password=None):
         self._ctx.use_certificate_chain_file(certfile)
         if password is not None:
-            if not isinstance(password, six.binary_type):
-                password = password.encode('utf-8')
-            self._ctx.set_passwd_cb(lambda *_: password)
+            self._ctx.set_passwd_cb(lambda max_length, prompt_twice, userdata: password)
         self._ctx.use_privatekey_file(keyfile or certfile)
 
     def wrap_socket(self, sock, server_side=False,

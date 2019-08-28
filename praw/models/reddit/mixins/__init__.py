@@ -1,22 +1,18 @@
 """Package providing reddit class mixins."""
-from json import dumps
 from ....const import API_PATH
-from .editable import EditableMixin
-from .fullname import FullnameMixin
-from .gildable import GildableMixin
-from .inboxable import InboxableMixin
-from .inboxtoggleable import InboxToggleableMixin
-from .messageable import MessageableMixin
-from .replyable import ReplyableMixin
-from .reportable import ReportableMixin
-from .savable import SavableMixin
-from .votable import VotableMixin
+from .editable import EditableMixin  # NOQA
+from .gildable import GildableMixin  # NOQA
+from .inboxable import InboxableMixin  # NOQA
+from .inboxtoggleable import InboxToggleableMixin  # NOQA
+from .messageable import MessageableMixin  # NOQA
+from .replyable import ReplyableMixin  # NOQA
+from .reportable import ReportableMixin  # NOQA
+from .savable import SavableMixin  # NOQA
+from .votable import VotableMixin  # NOQA
 
 
 class ThingModerationMixin(object):
     """Provides moderation methods for Comments and Submissions."""
-
-    REMOVAL_MESSAGE_API = None
 
     def approve(self):
         """Approve a :class:`~.Comment` or :class:`~.Submission`.
@@ -38,11 +34,10 @@ class ThingModerationMixin(object):
            submission.mod.approve()
 
         """
-        self.thing._reddit.post(
-            API_PATH["approve"], data={"id": self.thing.fullname}
-        )
+        self.thing._reddit.post(API_PATH['approve'],
+                                data={'id': self.thing.fullname})
 
-    def distinguish(self, how="yes", sticky=False):
+    def distinguish(self, how='yes', sticky=False):
         """Distinguish a :class:`~.Comment` or :class:`~.Submission`.
 
         :param how: One of 'yes', 'no', 'admin', 'special'. 'yes' adds a
@@ -66,10 +61,10 @@ class ThingModerationMixin(object):
         See also :meth:`~.undistinguish`
 
         """
-        data = {"how": how, "id": self.thing.fullname}
-        if sticky and getattr(self.thing, "is_root", False):
-            data["sticky"] = True
-        self.thing._reddit.post(API_PATH["distinguish"], data=data)
+        data = {'how': how, 'id': self.thing.fullname}
+        if sticky and getattr(self.thing, 'is_root', False):
+            data['sticky'] = True
+        self.thing._reddit.post(API_PATH['distinguish'], data=data)
 
     def ignore_reports(self):
         """Ignore future reports on a Comment or Submission.
@@ -93,28 +88,8 @@ class ThingModerationMixin(object):
         See also :meth:`~.unignore_reports`
 
         """
-        self.thing._reddit.post(
-            API_PATH["ignore_reports"], data={"id": self.thing.fullname}
-        )
-
-    def lock(self):
-        """Lock the a :class:`~.Comment` or :class:`~.Submission`.
-
-        Example usage:
-
-           # lock a comment:
-           comment = reddit.comment('dkk4qjd')
-           comment.mod.lock()
-           # lock a submission:
-           submission = reddit.submission(id='5or86n')
-           submission.mod.lock()
-
-        See also :meth:`~.unlock`
-
-        """
-        self.thing._reddit.post(
-            API_PATH["lock"], data={"id": self.thing.fullname}
-        )
+        self.thing._reddit.post(API_PATH['ignore_reports'],
+                                data={'id': self.thing.fullname})
 
     def remove(self, spam=False):
         """Remove a :class:`~.Comment` or :class:`~.Submission`.
@@ -134,44 +109,8 @@ class ThingModerationMixin(object):
            submission.mod.remove()
 
         """
-        data = {"id": self.thing.fullname, "spam": bool(spam)}
-        self.thing._reddit.post(API_PATH["remove"], data=data)
-
-    def send_removal_message(
-        self,
-        message,
-        title="ignored",
-        type="public",  # pylint: disable=redefined-builtin
-    ):
-        """Send a removal message for a Comment or Submission.
-
-        Reddit adds human-readable information about the object to the message.
-
-        :param type: One of 'public', 'private', 'private_exposed'.
-            'public' leaves a stickied comment on the post.
-            'private' sends a Modmail message with hidden username.
-            'private_exposed' sends a Modmail message without hidden username.
-        :param title: The short reason given in the message.
-            (Ignored if type is 'public'.)
-        :param message: The body of the message.
-
-        If ``type`` is 'public', the new :class:`~.Comment` is returned.
-        """
-        # The API endpoint used to send removal messages is different
-        # for posts and comments, so the derived classes specify which one.
-        if self.REMOVAL_MESSAGE_API is None:
-            raise NotImplementedError("ThingModerationMixin must be extended.")
-        url = API_PATH[self.REMOVAL_MESSAGE_API]
-
-        # Only the first element of the item_id list is used.
-        data = {
-            "item_id": [self.thing.fullname],
-            "message": message,
-            "title": title,
-            "type": type,
-        }
-
-        return self.thing._reddit.post(url, data={"json": dumps(data)}) or None
+        data = {'id': self.thing.fullname, 'spam': bool(spam)}
+        self.thing._reddit.post(API_PATH['remove'], data=data)
 
     def undistinguish(self):
         """Remove mod, admin, or special distinguishing on object.
@@ -192,7 +131,7 @@ class ThingModerationMixin(object):
         See also :meth:`~.distinguish`
 
         """
-        self.distinguish(how="no")
+        self.distinguish(how='no')
 
     def unignore_reports(self):
         """Resume receiving future reports on a Comment or Submission.
@@ -214,37 +153,11 @@ class ThingModerationMixin(object):
         See also :meth:`~.ignore_reports`
 
         """
-        self.thing._reddit.post(
-            API_PATH["unignore_reports"], data={"id": self.thing.fullname}
-        )
-
-    def unlock(self):
-        """Unlock the a :class:`~.Comment` or :class:`~.Submission`.
-
-        Example usage:
-
-           # unlock a comment:
-           comment = reddit.comment('dkk4qjd')
-           comment.mod.unlock()
-           # unlock a submission:
-           submission = reddit.submission(id='5or86n')
-           submission.mod.unlock()
-
-        See also :meth:`~.lock`
-
-        """
-        self.thing._reddit.post(
-            API_PATH["unlock"], data={"id": self.thing.fullname}
-        )
+        self.thing._reddit.post(API_PATH['unignore_reports'],
+                                data={'id': self.thing.fullname})
 
 
-class UserContentMixin(
-    EditableMixin,
-    GildableMixin,
-    InboxToggleableMixin,
-    ReplyableMixin,
-    ReportableMixin,
-    SavableMixin,
-    VotableMixin,
-):
+class UserContentMixin(EditableMixin, GildableMixin, InboxToggleableMixin,
+                       ReplyableMixin, ReportableMixin, SavableMixin,
+                       VotableMixin):
     """A convenience mixin that applies to both Comments and Submissions."""

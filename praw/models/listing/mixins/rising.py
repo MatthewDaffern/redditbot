@@ -1,5 +1,5 @@
 """Provide the RisingListingMixin class."""
-from ....compat import urljoin
+from ....const import urljoin
 from ...base import PRAWBase
 from ..generator import ListingGenerator
 
@@ -14,11 +14,9 @@ class RisingListingMixin(PRAWBase):
         :class:`.ListingGenerator`.
 
         """
-        return ListingGenerator(
-            self._reddit,
-            urljoin(self._path, "randomrising"),
-            **generator_kwargs
-        )
+        return ListingGenerator(self._reddit,
+                                urljoin(self._path, 'randomrising'),
+                                **generator_kwargs)
 
     def rising(self, **generator_kwargs):
         """Return a ListingGenerator for rising submissions.
@@ -27,6 +25,5 @@ class RisingListingMixin(PRAWBase):
         :class:`.ListingGenerator`.
 
         """
-        return ListingGenerator(
-            self._reddit, urljoin(self._path, "rising"), **generator_kwargs
-        )
+        return ListingGenerator(self._reddit, urljoin(self._path, 'rising'),
+                                **generator_kwargs)

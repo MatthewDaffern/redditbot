@@ -37,13 +37,9 @@ class MessageableMixin(object):
            reddit.subreddit('test').message('TEST', 'test PM from PRAW')
 
         """
-        data = {
-            "subject": subject,
-            "text": message,
-            "to": "{}{}".format(
-                getattr(self.__class__, "MESSAGE_PREFIX", ""), self
-            ),
-        }
+        data = {'subject': subject, 'text': message,
+                'to': '{}{}'.format(getattr(
+                    self.__class__, 'MESSAGE_PREFIX', ''), self)}
         if from_subreddit:
-            data["from_sr"] = str(from_subreddit)
-        self._reddit.post(API_PATH["compose"], data=data)
+            data['from_sr'] = str(from_subreddit)
+        self._reddit.post(API_PATH['compose'], data=data)

@@ -1,6 +1,5 @@
 """Provide the RedditorListingMixin class."""
-from ....compat import urljoin
-from ....util.cache import cachedproperty
+from ....const import urljoin
 from ..generator import ListingGenerator
 from .base import BaseListingMixin
 from .gilded import GildedListingMixin
@@ -9,7 +8,7 @@ from .gilded import GildedListingMixin
 class RedditorListingMixin(BaseListingMixin, GildedListingMixin):
     """Adds additional methods pertaining to Redditor instances."""
 
-    @cachedproperty
+    @property
     def comments(self):
         r"""Provide an instance of :class:`.SubListing` for comment access.
 
@@ -22,9 +21,11 @@ class RedditorListingMixin(BaseListingMixin, GildedListingMixin):
                print(comment.body.split('\n', 1)[0][:79])
 
         """
-        return SubListing(self._reddit, self._path, "comments")
+        if self.__dict__.get('_comments') is None:
+            self._comments = SubListing(self._reddit, self._path, 'comments')
+        return self._comments
 
-    @cachedproperty
+    @property
     def submissions(self):
         """Provide an instance of :class:`.SubListing` for submission access.
 
@@ -37,7 +38,10 @@ class RedditorListingMixin(BaseListingMixin, GildedListingMixin):
                print(submission.title)
 
         """
-        return SubListing(self._reddit, self._path, "submitted")
+        if self.__dict__.get('_submissions') is None:
+            self._submissions = SubListing(self._reddit, self._path,
+                                           'submitted')
+        return self._submissions
 
     def downvoted(self, **generator_kwargs):
         """Return a ListingGenerator for items the user has downvoted.
@@ -51,9 +55,8 @@ class RedditorListingMixin(BaseListingMixin, GildedListingMixin):
         :class:`.ListingGenerator`.
 
         """
-        return ListingGenerator(
-            self._reddit, urljoin(self._path, "downvoted"), **generator_kwargs
-        )
+        return ListingGenerator(self._reddit, urljoin(self._path, 'downvoted'),
+                                **generator_kwargs)
 
     def gildings(self, **generator_kwargs):
         """Return a ListingGenerator for items the user has gilded.
@@ -67,11 +70,9 @@ class RedditorListingMixin(BaseListingMixin, GildedListingMixin):
         :class:`.ListingGenerator`.
 
         """
-        return ListingGenerator(
-            self._reddit,
-            urljoin(self._path, "gilded/given"),
-            **generator_kwargs
-        )
+        return ListingGenerator(self._reddit,
+                                urljoin(self._path, 'gilded/given'),
+                                **generator_kwargs)
 
     def hidden(self, **generator_kwargs):
         """Return a ListingGenerator for items the user has hidden.
@@ -85,9 +86,8 @@ class RedditorListingMixin(BaseListingMixin, GildedListingMixin):
         :class:`.ListingGenerator`.
 
         """
-        return ListingGenerator(
-            self._reddit, urljoin(self._path, "hidden"), **generator_kwargs
-        )
+        return ListingGenerator(self._reddit, urljoin(self._path, 'hidden'),
+                                **generator_kwargs)
 
     def saved(self, **generator_kwargs):
         """Return a ListingGenerator for items the user has saved.
@@ -101,9 +101,8 @@ class RedditorListingMixin(BaseListingMixin, GildedListingMixin):
         :class:`.ListingGenerator`.
 
         """
-        return ListingGenerator(
-            self._reddit, urljoin(self._path, "saved"), **generator_kwargs
-        )
+        return ListingGenerator(self._reddit, urljoin(self._path, 'saved'),
+                                **generator_kwargs)
 
     def upvoted(self, **generator_kwargs):
         """Return a ListingGenerator for items the user has upvoted.
@@ -117,9 +116,8 @@ class RedditorListingMixin(BaseListingMixin, GildedListingMixin):
         :class:`.ListingGenerator`.
 
         """
-        return ListingGenerator(
-            self._reddit, urljoin(self._path, "upvoted"), **generator_kwargs
-        )
+        return ListingGenerator(self._reddit, urljoin(self._path, 'upvoted'),
+                                **generator_kwargs)
 
 
 class SubListing(BaseListingMixin):
@@ -133,7 +131,7 @@ class SubListing(BaseListingMixin):
         :param subpath: The additional path to this sublisting.
 
         """
-        super(SubListing, self).__init__(reddit, _data=None)
+        super(SubListing, self).__init__(reddit, None)
         self._listing_use_sort = True
         self._reddit = reddit
         self._path = urljoin(base_path, subpath)

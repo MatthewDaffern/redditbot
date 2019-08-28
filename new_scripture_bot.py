@@ -1,6 +1,24 @@
 from Common import *
 from log import *
 import new_Common
+import time
+from authenticator import authenticate
+import functools
+import re
+
+
+def timer(int_input):
+    initial_time = time.time()
+    while time.time() - initial_time < int_input:
+        True
+    return None
+
+
+def api():
+    api_file = open('api.key', 'r+')
+    key = api_file.readlines()[0]
+    return key
+
 
 def fullname_creator(comment_object):
     initial_fullname = str(comment_object.fullname)
@@ -9,35 +27,43 @@ def fullname_creator(comment_object):
     return final_fullname
 
 
-def reply_function(reddit_object, comment_fullname_function, api_call_function):
-    for i in reddit_object.inbox.unread(limit=None)
-        list_of_saved = reddit_object.redditor('scripture_bot').saved()
-        for comments in list_of_saved:
-            if str(i) == str(comments):
-                return 'already responded to the redditor'
-        if "scripture_bot!" not in i.body:
+def reply_function(comment_id_input, api_input, reddit_object_input):
+    for i in new_Common.command_list():
+        if re.match(i, comment_id_input.body) is not None:
             i.mark_read()
-            return malformed_request(i.author, i.body, i)
-            i.save()
-        if "scripture_bot!" in i.body:
-            i.mark_read()
-            comment_fullname = comment_fullname_function(i)
-            unread_comment = reddit_object.comment(id=comment_fullname)
-            result = new_Common.command_processor(i.body, api_call_function())
+            comment_fullname = fullname_creator(i)
+            unread_comment = reddit_object_input.comment(id=comment_fullname)
+            result = new_Common.command_processor(i.body, api_input)
             unread_comment.reply(result)
             i.save()
+            return None
+    return 'No command found'
 
 
-def the_actual_bot(authentication, fullname_creator_func, reply_function):
-    reddit_object = authentication
-    reply_function(reddit_object, fullname_creator_func, query_processor, requests_object_caller)
+def list_creator(reddit_object_input):
+    unread = list(reddit_object_input.inbox.unread(limit=None))
+    saved = list(reddit_object_input.redditor('scripture_bot').saved(limit=10))
+
+    def saved_test(comment_input):
+        if comment_input in saved:
+            return True
+        else:
+            return False
+    return list(filter(saved_test, unread))
+
+
+def main():
+    reddit_object = authenticate()
+    configured_processor = functools.partial(reply_function, api_input=api(), reddit_object_input=reddit_object)
+    list(map(lambda x: configured_processor(comment_id_input=x), list_creator(reddit_object)))
+
 
 # Uncomment this if you want to run the bot locally and activate the script by executing scripture_bot.py
 
-# from authenticator import authenticate
-# while 1 == 1:
-#    the_actual_bot(authenticate(), fullname_creator, reply_function)
 
+if __name__ == '__main__':
+    while True:
+        timer(300)
+        main()
 
-# pdb.runcall(the_actual_bot(authenticate(), unread_generator, fullname_creator, reply_function_and_error_logging))
 

@@ -2,9 +2,9 @@ import praw
 
 
 def authenticate():
-    reddit_instance = praw.Reddit(client_id='CLIENT_ID',
-                                  client_secret='CLIENT_SECRET',
+    reddit_instance = praw.Reddit(client_id='ID',
+                                  client_secret='SECRET',
                                   password='PASSWORD',
-                                  user_agent='USER_AGENT',
-                                  username='USERNAME')
+                                  user_agent='agent',
+                                  username='bot name')
     return reddit_instance
