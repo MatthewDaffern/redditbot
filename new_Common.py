@@ -54,8 +54,8 @@ def neatify_string_to_list(input_string):
 
 
 def reference_iterator(input_string):
-    '''curries the neatify and slicer together to make a verse iterable. Requires a string object'''
-    return list(map(neatify_string_to_list, verse_slice(input_string)))
+    '''creates the iterator that's needed for your API calls.'''
+    return list(verse_slice(input_string))
 
 
 "[Luke 24:1-5 KJV]"
@@ -70,24 +70,59 @@ curl --request GET \
 
 
 def versions_transformer(query_input, versions_dict_input):
-    internal_query = query_input
-    if internal_query[2] not in versions_dict_input.keys():
-        internal_query[2] = 'version not found'
-        return internal_query
-    else:
-        internal_query[2] = versions_dict_input[internal_query[2]]
-        return internal_query
+    for i in list(versions_dict_input.keys()):
+        result = re.search(i, query_input.upper())
+        if result is not None:
+            version = versions_dict_input[result.group(0)]
+            reduced_query = query_input.replace(result.group(0), '')
+            return [version, reduced_query]
+    failover_reduced_query = query_input.split(' ')
+    failover_reduced_query = failover_reduced_query.pop(len(failover_reduced_query) - 1)
+    return [versions_dict_input['KJV'], str.join('', failover_reduced_query)]
 
 
-def book_transformer(query_input, book_dict):
-    internal_query = query_input
-    if internal_query[0] not in book_dict.keys():
-        print(str(internal_query))
-        internal_query[0] = book_dict['KJV']
-        return internal_query
+def book_transformer(query_input, book_dict_input):
+    sample_version = versions_dict.versions_dict()
+    for i in list(book_dict_input.keys()):
+        result = re.search(i, query_input[1].capitalize())
+        if result is not None:
+            book = book_dict_input[result.group(0)]
+            reduced_query = query_input[1].replace(result.group(0), '')
+            return [query_input[0], book, reduced_query]
+    return [sample_version['KJV'], 'error book not found']
+
+
+def verse_transformer(query_input):
+    print(query_input)
+    if query_input[2] == 'error book not found':
+        query_input[2] = query_input[2].replace(' ', ".")
+        return query_input
+    verse = query_input[2]
+    verse = verse.replace('[', '').replace(']', '').lstrip().rstrip()
+    book = query_input[1]
+    verse = verse.split(':')
+    if '-' in verse[1]:
+        verse_section_list = verse[1].split('-')
+        return [query_input[0],
+                str.join('', (book, '.', verse[0], '.', verse_section_list[0], '-',
+                              book, '.', verse[0], '.', verse_section_list[1]))]
     else:
-        internal_query[0] = book_dict[internal_query[0]]
-        return internal_query
+        return [query_input[0], str.join("", (book, '.', verse[0], '.', verse[1]))]
+
+
+def query_transformer(input_string):
+    versions = versions_dict.versions_dict()
+    books = books_dict.books_dict()
+    versions_transformer_partial = functools.partial(versions_transformer, versions_dict_input=versions)
+    book_transformer_partial = functools.partial(book_transformer, book_dict_input=books)
+    return verse_transformer(book_transformer_partial(query_input=
+                                                      versions_transformer_partial(query_input=
+                                                                                   input_string)
+                                                      )
+                             )
+
+
+'''
 
 
 def verse_transformer(query_input):
@@ -111,15 +146,10 @@ def verse_transformer(query_input):
     else:
         internal_query[2] = 'malformed verse request'
         return internal_query
+'''
 # ======================================================================================================================
 
 
-def query_transformer(input_list):
-    versions = versions_dict.versions_dict()
-    books = books_dict.books_dict()
-    versions_transformer_partial = functools.partial(versions_transformer, versions_dict_input=versions)
-    book_transformer_partial = functools.partial(book_transformer, book_dict=books)
-    return verse_transformer(versions_transformer_partial(query_input=book_transformer_partial(query_input=input_list)))
 
 
 # ======================================================================================================================

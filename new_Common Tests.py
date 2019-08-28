@@ -40,7 +40,7 @@ def api():
 
 key = api()
 
-input_test = 'look up [John 3:16 KJV] [1 Peter 2:5 KJV] [2nd Samuel 3:18 KJV]'
+input_test = 'look up [john 3:16 kjv] [1 Peter 2:5 KJV] [2nd Samuel 3:18 KJV]'
 
 
 '''
@@ -57,6 +57,7 @@ comment = new_Common.comment_creator(text)
 
 print(comment)
 '''
+test = '[1 Peter 2:5 KJV]'
 
 print(new_Common.command_processor(input_test, key))
 
