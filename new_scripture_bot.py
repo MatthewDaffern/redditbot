@@ -1,23 +1,32 @@
 from Common import *
 from log import *
 import new_Common
-import time
 from authenticator import authenticate
 import functools
 import re
+import datetime
+from time import sleep
 
 
 def timer(int_input):
-    initial_time = time.time()
-    while time.time() - initial_time < int_input:
-        True
-    return None
+    return sleep(int_input)
 
 
 def api():
     api_file = open('api.key', 'r+')
     key = api_file.readlines()[0]
+    api_file.close()
     return key
+
+
+def log_to_cloud_watch_input(comment_input):
+    return print(str.join('', (comment_input, '\n', 
+                               comment_input.body, '\n', 
+                               str(datetime.date.today()))))
+
+
+def log_to_cloud_watch_output(comment_input, reply_input):
+    return print(str.join('', (str(comment_input), '\n', reply_input)))
 
 
 def fullname_creator(comment_object):
@@ -28,28 +37,26 @@ def fullname_creator(comment_object):
 
 
 def reply_function(comment_id_input, api_input, reddit_object_input):
+    print()
     for i in new_Common.command_list():
         if re.match(i, comment_id_input.body) is not None:
+            log_to_cloud_watch_input(comment_id_input)
             i.mark_read()
             comment_fullname = fullname_creator(i)
-            unread_comment = reddit_object_input.comment(id=comment_fullname)
+            comment_id_string = fullname_creator(comment_id_input)
+            unread_comment = reddit_object_input.comment(id=comment_id_string)
             result = new_Common.command_processor(i.body, api_input)
             unread_comment.reply(result)
+            log_to_cloud_watch_output(comment_id_input, result)
             i.save()
             return None
     return 'No command found'
 
 
 def list_creator(reddit_object_input):
-    unread = list(reddit_object_input.inbox.unread(limit=None))
-    saved = list(reddit_object_input.redditor('scripture_bot').saved(limit=10))
-
-    def saved_test(comment_input):
-        if comment_input in saved:
-            return True
-        else:
-            return False
-    return list(filter(saved_test, unread))
+    unread = set(reddit_object_input.inbox.unread(limit=None))
+    saved = set(reddit_object_input.redditor('scripture_bot').saved(limit=10))
+    return [x for x in unread if x not in saved]
 
 
 def main():
