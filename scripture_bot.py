@@ -1,5 +1,30 @@
 from Common import *
-from log import *
+from authenticator import authenticate
+import functools
+import re
+import datetime
+from time import sleep
+
+
+def timer(int_input):
+    return sleep(int_input)
+
+
+def api():
+    api_file = open('api.key', 'r+')
+    key = api_file.readlines()[0]
+    api_file.close()
+    return key
+
+
+def log_to_cloud_watch_input(comment_input):
+    return print(str.join('', (str(comment_input), '\n',
+                               str(comment_input.body), '\n',
+                               str(datetime.date.today()))))
+
+
+def log_to_cloud_watch_output(comment_input, reply_input):
+    return print(str.join('', (str(comment_input), '\n', reply_input)))
 
 
 def fullname_creator(comment_object):
@@ -9,59 +34,39 @@ def fullname_creator(comment_object):
     return final_fullname
 
 
-def reply_function_and_error_logging(reddit_object,
-                                     comment_fullname_function,
-                                     api_call_function,
-                                     requests_object_caller_func):
-    for i in reddit_object.inbox.unread(limit=None):
-        list_of_saved = reddit_object.redditor('scripture_bot').saved()
-        for comments in list_of_saved:
-            if str(i) == str(comments):
-                return 'already responded to the redditor'
-        if "scripture_bot!" not in i.body:
-            i.mark_read()
-            return malformed_request(i.author, i.body, i)
-        if "scripture_bot!" in i.body:
-            query = str(i.body)
-            query_request_logger(i, query)
-            requests_object = requests_object_caller_func(query)
-            api_request_logger(i, requests_object, query)
-            response = api_call_function(query, requests_object)
-            comment_fullname = comment_fullname_function(i)
-            unread_comment = reddit_object.comment(id=comment_fullname)
-            if ": [" in response:
-                response = esv_error_catcher(response)
-            if ":[" in response:
-                response = esv_error_catcher(response)
-            if "{" in response:
-                response = esv_error_catcher(response)
-            if 'error:' in response:
-                response = funny_response()
-                unread_comment.reply(response)
-                i.mark_read()
-                return complaint_log(i.author, response)
-            if '8000' in response:
-                response = 'Try being better at quoting. Your request was over 8,000 characters.'
-                unread_comment.reply(response)
-                i.mark_read()
-                return complaint_log(i.author, response)
-            if 'error' not in response:
-                unread_comment.reply(response)
-                i.save()
-                i.mark_read()
-            query_response_logger(i, requests_object, query, response)
+def reply_function(comment_id_input, api_input, reddit_object_input):
+    for i in command_options():
+        print(type(i))
+        if re.match(i, comment_id_input.body) is not None:
+            log_to_cloud_watch_input(comment_id_input)
+            comment_id_input.mark_read()
+            comment_id_string = fullname_creator(comment_id_input)
+            unread_comment = reddit_object_input.comment(id=comment_id_string)
+            result = command_processor(comment_id_input.body, api_input)
+            unread_comment.reply(result)
+            log_to_cloud_watch_output(comment_id_input, result)
+            comment_id_input.save()
+            return None
+    return 'No command found'
 
 
-def the_actual_bot(authentication, fullname_creator_func, reply_function):
-    reddit_object = authentication
-    reply_function(reddit_object, fullname_creator_func, query_processor, requests_object_caller)
-
-# Uncomment this if you want to run the bot locally and activate the script by executing scripture_bot.py
-
-# from authenticator import authenticate
-# while 1 == 1:
-#    the_actual_bot(authenticate(), fullname_creator, reply_function_and_error_logging)
+def list_creator(reddit_object_input):
+    unread = set(reddit_object_input.inbox.unread(limit=None))
+    saved = set(reddit_object_input.redditor('scripture_bot').saved(limit=10))
+    return [x for x in unread if x not in saved]
 
 
-# pdb.runcall(the_actual_bot(authenticate(), unread_generator, fullname_creator, reply_function_and_error_logging))
+def main():
+    reddit_object = authenticate()
+    configured_processor = functools.partial(reply_function, api_input=api(), reddit_object_input=reddit_object)
+    list(map(lambda x: configured_processor(comment_id_input=x), list_creator(reddit_object)))
+
+
+
+
+if __name__ == '__main__':
+    while True:
+        timer(300)
+        main()
+
 

@@ -1,480 +1,251 @@
+import re
 import requests
-import log
-import API_keys
-import time
-
-# ============================
-# error handling
-
+import random
+from functools import partial
+import json
+import books_dict
+import versions_dict
 
 
-# =====================================================================================================================
-# API key loading functions
-def biblia_api_key_storage():
-    return API_keys.biblia()
+def command_options():
+    commands = ['.*look up.*',
+                '.*hurt my feelings.*',
+                '.*cow says.*']
+    return commands
 
 
-def esv_api_key_storage():
-    return API_keys.esv()
+def command_list():
+    return dict([(0, return_verse_sections),
+                 (1, insult_generator),
+                 (2, repeat_after_me),
+                 (3, default_command)])
 
 
-# =====================================================================================================================
-# Nonversion specific functions
+def command_processor(input_string, api_key_input):
+    patterns = command_options()
+    commands = command_list()
+    picked_command = str()
+    for i in patterns:
+        if re.match(i, input_string) is not None:
+            print(re.match(i, input_string))
+            picked_command = patterns.index(i)
+            break
+        else:
+            picked_command = 3
+    return commands[picked_command](input_string, api_key_input)
+
+# ======================================================================================================================
+def default_command(input_string, api_key):
+    return 'MALFORMED COMMAND. PLEASE TRY AGAIN. \n the valid commands are: \n hurt my feelings: gives you a luther insult \n look up [John 3:16 KJV]: gives you a bible reference \n cowsays: repeats after you'
+
+def verse_slice(input_string):
+    pattern = '\[.{0,15}:.{0,10}\]'
+    match = re.finditer(pattern, input_string)
+    return list(map(lambda x: x.group(0), list(match)))
 
 
-def available_versions():
-    correct_versions = dict([('ASV', 'ASV'),
-                             ('ARB', 'ARVANDYKE'),
-                             ('KJV', 'KJV'),
-                             ('APOC', 'KJVAPOC'),
-                             ('LSG', 'LSG'),
-                             ('BYZ', 'BYZ'),
-                             ('DRB', 'DARBY'),
-                             ('ELZ', 'ELZEVIR'),
-                             ('ITL', 'ITDIODATI1649'),
-                             ('EMP', 'EMPHBBL'),
-                             ('LEB', 'LEB'),
-                             ('SCR', 'SCRMORPH'),
-                             ('FIN', 'FI-RAAMATTU'),
-                             ('RVR', 'RVR60'),
-                             ('RVA', 'RVA'),
-                             ('RUS', 'BB-SBB-RUSBT'),
-                             ('ESP', 'EO-ZAMENBIB'),
-                             ('SVV', 'SVV'),
-                             ('STPH', 'STEPHENS'),
-                             ('TKH', 'TANAKH'),
-                             ('PBT', 'WBTC-PTBRNT'),
-                             ('WHG', 'WH1881MR'),
-                             ('YLT', 'YLT'),
-                             ('ESV', 'ESV')])
-    return correct_versions
-# Versions I allow. Currently not distinguished by API type.
+def neatify_string_to_list(input_string):
+    print(str.encode(input_string))
+    clean_brackets = input_string.replace('[', '')\
+                                 .replace(']', '')
+    return clean_brackets.split(' ')
+# ======================================================================================================================
+# curry the above to create a series of lists for processing
 
 
-def rate_limiter():
-    whole_second = 1
-    divisor = 40
-    rate_limiting_time = whole_second / divisor
-    initial_time = time.time()
-    final_time = time.time()
-    time_difference = final_time-initial_time
-    while time_difference < rate_limiting_time:
-        final_time = time.time()
-        time_difference = final_time-initial_time
+def reference_iterator(input_string):
+    '''creates the iterator that's needed for your API calls.'''
+    return list(verse_slice(input_string))
 
 
-# Hastily written rate_limiter since Biblia restricts the amount of API calls I can make.
-# I currently have it on a 1/32 delay whenever rate_limiter is invoked
+"[Luke 24:1-5 KJV]"
 
-def text_creator(response_builder):
-    return response_builder.text
-# Just grabs the text from the response object
-
-
-def comment_parser(input_string, version_dict):
-    def space_remover_and_list_creator(input_string_object):
-        query = input_string_object
-        while "  " in query:
-            query = query.replace('  ', ' ')
-        query = query.split(" ")
-        return query
-# Creates the initial list object
-
-    def newline_character_remover(list_input):
-        available_bible_versions = available_versions()
-        username_mention = 'scripture_bot!'
-        index_of_version = 0
-        index_of_username_mention = 0
-        cleaned_version = 'blargh'
-        for i in list_input:
-            for version in available_bible_versions:
-                if version in i:
-                    cleaned_version = version
-                    index_of_version = list_input.index(i)
-            if username_mention in i:
-                index_of_username_mention = list_input.index(i)
-        list_input[index_of_username_mention] = username_mention
-        list_input[index_of_version] = cleaned_version
-        cleaned_list = list_input
-        return cleaned_list
-# Removes the \n characters that were messing me up.
-
-    def index_of_username_mention_finder(list_input):
-        index_of_username_mention = 0
-        for i in list_input:
-            if 'scripture_bot!' in i:
-                index_of_username_mention = list_input.index(i)
-                break
-        return index_of_username_mention
-# Finds the index of the username_mention
-
-    def slice_creator(query, version_dict_object):
-        available_bible_versions = version_dict_object
-        index_of_username_mention = index_of_username_mention_finder(query)
-        search_indice = index_of_username_mention
-        version_query_loop = 'on'
-        # searches for the end of the query
-        success = 'no'
-        while version_query_loop == 'on':
-            if success == 'yes':
-                break
-            if search_indice == len(query):
-                log.incorrect_bible_version()
-                join_list = [insult_generator(),
-                            '\n \n try something like ',
-                            '\n \n `u/scripture_bot``!`` ``John 3:16 KJV`',
-                            ' next time.',
-                            '\n\n***\n',
-                            ' \n \n the above insult is from the',
-                            ' [lutheran insult generator](https://ergofabulous.org/luther/insult-list.php)']
-                return str.join('', join_list)
-            test = query[search_indice].upper()
-            for i in list(available_bible_versions):
-                if test in i:
-                    success = 'yes'
-                    print(success)
-                    break
-            search_indice = search_indice + 1
-        query_slice = query[index_of_username_mention:int(search_indice)]
-        return query_slice
-# Creates the slice based on where the valid bible version is.
-
-    def final_list_creator(query, version_dict_object):
-        if 'error' in query:
-            return query
-        username_mention = 'scripture_bot!'
-        query_slice = query
-        available_bible_versions = version_dict_object
-        # [/u/scripture_bot!,1st,John,3:2,KJV]
-        for i in query_slice:
-            if username_mention in i:
-                username_mention_index = query_slice.index(i)
-            if i.upper() in list(available_bible_versions):
-                bible_version_index = query_slice.index(i)
-                bible_version = available_bible_versions[i.upper()]
-        var_check = list(locals())
-        for i in ('bible_version_index', 'username_mention_index'):
-            if i not in var_check:
-                print('missing a bible version index or username mention index')
-                print(str(i)+' not assigned')
-                bible_version = 'error: no bible book'
-                bible_book = 'error: no chapter verse'
-                bible_chapter_verse = 'error: no chapter verse'
-                final_query_slice = [bible_book, bible_chapter_verse, bible_version]
-                return final_query_slice
-        book_chapter_verse_slice = query_slice[int(username_mention_index+1): int(bible_version_index)]
-        for i in book_chapter_verse_slice:
-            i_class = str()
-            if '.' in i:
-                bible_chapter_verse = i
-                bible_chapter_verse_index = book_chapter_verse_slice.index(i)
-            if ':' in i:
-                bible_chapter_verse = i
-                bible_chapter_verse_index = book_chapter_verse_slice.index(i)
-            try:
-                i_class = str(type(int(i)))
-            except ValueError:
-                dummy = 1
-            if 'int' in i_class:
-                bible_chapter_verse = i
-                bible_chapter_verse_index = book_chapter_verse_slice.index(i)
-            # Turns out, I needed to add a little more checking to get the chapter_verse slice.
-        var_check = list(locals())
-        if 'bible_chapter_verse_index' not in var_check:
-            print('bible_chapter_verse_index error')
-            bible_version = 'error: no bible book'
-            bible_book = 'error: no chapter verse'
-            bible_chapter_verse = 'error: no chapter verse'
-            final_query_slice = [bible_book, bible_chapter_verse, bible_version]
-            return final_query_slice
-        bible_book_slice = book_chapter_verse_slice[:(bible_chapter_verse_index)]
-        bible_book = str()
-        for i in bible_book_slice:
-            bible_book = bible_book + str(i) + '+'
-        bible_book = bible_book.rstrip('+')
-        var_check = list(locals())
-        if 'bible_book' not in var_check:
-            bible_book = 'error: no bible book'
-        if 'bible_chapter_verse' not in var_check:
-            bible_chapter_verse = 'error: no chapter verse'
-        if 'bible_version' not in var_check:
-            bible_version = 'error: no version recognized'
-        final_query_slice = [bible_book, bible_chapter_verse, bible_version]
-        print(str(final_query_slice) + 'is the final_query_slice')
-        return final_query_slice
-    final_query = final_list_creator(slice_creator(newline_character_remover(
-                    space_remover_and_list_creator(input_string)), version_dict), version_dict)
-
-    # does the monstrous parsing and sorting job
-    print(str(final_query) + 'is the final_query')
-    return final_query
-# this is where most of the work is done to make the comment usable in an API call.
-# Most of my errors and problems have been here.
+'''
+curl --request GET \
+--url https://api.scripture.api.bible/v1/books \
+--header '***'
+'''
+# ======================================================================================================================
+# error catching functions
 
 
-# =====================================================================================================================
-# ESV Functions
+def versions_transformer(query_input, versions_dict_input):
+    for i in list(versions_dict_input.keys()):
+        processed_query = query_input.upper()
+        result = re.search(i, processed_query)
+        if result is not None:
+            version = versions_dict_input[result.group(0)]
+            reduced_query = processed_query.replace(result.group(0), '')
+            return [version, reduced_query]
+    failover_reduced_query = processed_query.split(' ')
+    failover_reduced_query = failover_reduced_query.pop(len(failover_reduced_query) - 1)
+    return [versions_dict_input['KJV'], str.join('', failover_reduced_query)]
 
 
-def esv_response_builder(query, api_key):
-    if 'error' in query:
-        return query
-    rate_limiter()
-    mode = 'text'
-    additional_parameters = '&include-passage-references=false&include-footnotes=false&include-headings=false'
-    url = 'https://api.esv.org/v3/passage/'+mode+'/?q='+query[0]+'+'+query[1]+additional_parameters
-    headers = {'authorization': str(api_key)}
-    api_call = requests.get(url, headers=headers)
-    print('API recieved is: ' + url)
-    return api_call
-# ESV specific request maker
+def book_transformer(query_input, book_dict_input):
+    sample_version = versions_dict.versions_dict()
+    query_input[1] = query_input[1].replace('[', '').replace(']', '').lstrip().rstrip().upper()
+    for i in list(book_dict_input.keys()):
+        result = re.search(i, query_input[1])
+        if result is not None:
+            book = book_dict_input[result.group(0)]
+            reduced_query = query_input[1].replace(result.group(0), '')
+            return [query_input[0], book, reduced_query]
+    return [sample_version['KJV'], 'error book not found']
 
 
-def final_esv_response(input_string):
-    if 'error' in input_string:
-        return input_string
-    removed_data = input_string.split('"passages"')
-    removed_data = removed_data[1]
-    removed_newlines = removed_data.replace('\\n', '')
-    removed_characters = removed_newlines.replace('\\u201d', '')\
-        .replace('\\u201c', '')\
-        .replace('\\u2019', '')\
-        .replace('\\u2018', '')\
-        .replace('\\u2014', '')\
-        .replace(': ["', '')\
-        .replace(']}', '')\
-        .replace('(ESV)"', '(ESV)')
-    while '  ' in removed_characters:
-        removed_characters = removed_characters.replace('  ', ' ')
-    esv_response_body = removed_characters
-    return esv_response_body
-# this accepts the input string and filters out all the irritating extra unicode characters with a .replace() call.
-# it also removes all the statistics I get in the beginning normally.
+def verse_transformer(query_input):
+    print(query_input)
+    if query_input[1] == 'error book not found':
+        query_input[1] = query_input[1].replace(' ', ".")
+        return query_input
+    verse = query_input[2]
+    verse = verse.replace('[', '').replace(']', '').lstrip().rstrip()
+    book = query_input[1]
+    verse = verse.split(':')
+    if '-' in verse[1]:
+        verse_section_list = verse[1].split('-')
+        return [query_input[0],
+                str.join('', (book, '.', verse[0], '.', verse_section_list[0], '-',
+                              book, '.', verse[0], '.', verse_section_list[1]))]
+    else:
+        return [query_input[0], str.join("", (book, '.', verse[0], '.', verse[1]))]
 
 
-def esv_footer():
-    couple_of_spaces = "\n\n***\n"
-    tos_footer1 = '^(this) ^(bot) ^(uses) ^(the) [^(ESV) ^(API)](https://api.esv.org/docs/)'
-    tos_footer2 = ' ^(from) [^(Crossway)](https://www.crossway.org/)'
-    tos_footer = tos_footer1+tos_footer2
-    github_footer = " ^(|) [^(source code)](https://github.com/matthewdaffern/redditbot)"
-    msg_the_devs_footer = ' ^(|) [^(message the developers)](https://www.reddit.com/message/compose?to=/r/scripturebot)'
-    footer = couple_of_spaces+tos_footer+github_footer+msg_the_devs_footer
-    return footer
-# fairly self explanatory. This is where I maintain compliance with my API agreement.
-
-# =====================================================================================================================
-# Biblia Functions
+def query_transformer(input_string):
+    versions = versions_dict.versions_dict()
+    books = books_dict.books_dict()
+    versions_transformer_partial = partial(versions_transformer, versions_dict_input=versions)
+    book_transformer_partial = partial(book_transformer, book_dict_input=books)
+    return verse_transformer(book_transformer_partial(query_input=
+                                                      versions_transformer_partial(query_input=
+                                                                                   input_string)
+                                                      )
+                             )
 
 
-def biblia_response_builder(query, api_key):
-        if 'error' in query:
-            return query
-        rate_limiter()
-        api_call = 'https://api.biblia.com/v1/bible/content/'+query[2]+'.txt.js?passage='+query[0]+query[1]
-        api_call = api_call+'&callback=myCallbackFunction&key='+api_key
-        api_call = api_call.replace('0A', '')
-        api_call = api_call.replace('%', '')
-        r = requests.get(api_call)
-        print('API recieved is: ' + api_call)
-        return r
-# biblia specific request maker
+'''
 
 
-def final_biblia_response(input_string):
-    if 'error' in input_string:
-        return input_string
-    biblia_response = input_string
-    biblia_response_stripped_front = biblia_response.strip('myCallbackfunction({"text":"')
-    biblia_response_stripped_front = biblia_response_stripped_front.replace('Function({"text":"', '')
-    biblia_response_stripped_back = biblia_response_stripped_front.strip('"});').replace('\\r', '').replace('\\n', '')
-    biblia_response_final = biblia_response_stripped_back
-    biblia_response_body = biblia_response_final
-    return biblia_response_body
-# this accepts the input string and filters out all the irritating extra unicode characters with a .replace() call.
-# it also removes all the statistics I get in the beginning normally.
+def verse_transformer(query_input):
+    internal_query = query_input
+    verse = internal_query[1]
+    if ':' in verse:
+        verse = verse.split(':')  
+        if '-' in verse[1]:
+            passage = verse[1].split('-')
+            verse = str.join('', (internal_query[0], '.',
+                                  verse[0], '.',
+                                  passage[0], '-',
+                                  internal_query[0], '.',
+                                  verse[0], '.',
+                                  passage[1]))
+        else:
+            verse = str.join('', (internal_query[0], '.',
+                                  verse[0], '.',
+                                  verse[1]))
+        return [internal_query[2], verse]
+    else:
+        internal_query[2] = 'malformed verse request'
+        return internal_query
+'''
+# ======================================================================================================================
 
 
-def biblia_footer():
-    couple_of_spaces = "\n\n***\n"
-    tos_footer1 = "^(this) ^(bot) ^(uses) ^(the) [^(biblia)](https://biblia.com/)"
-    tos_footer2 = " ^(web) ^(services) ^(from) [^(Faithlife) ^(Corporation)](https://faithlife.com/about/)"
-    tos_footer = tos_footer1+tos_footer2
-    github_footer = " ^(|) [^(source code)](https://github.com/matthewdaffern/redditbot)"
-    msg_the_devs_footer = ' ^(|) [^(message the developers)](https://www.reddit.com/message/compose?to=/r/scripturebot)'
-    footer = couple_of_spaces+tos_footer+github_footer+msg_the_devs_footer
-    return footer
-# fairly self explanatory. This is where I maintain compliance with my API agreement.
 
 
-# =====================================================================================================================
-# Just designed to reject requests that don't return a 200 call.
-
-def api_error_handler(response_builder):
-    # expects a requests object as input
-    if "200" not in str(response_builder):
-        log.http_non_200(response_builder)
-        join_list = [insult_generator(),
-                     '\n \n try something like ',
-                     '\n \n `u/scripture_bot``!`` ``John 3:16 KJV`',
-                     ' next time.',
-                     '\n\n***\n',
-                     ' \n \n the above insult is from the',
-                     ' [lutheran insult generator](https://ergofabulous.org/luther/insult-list.php)']
-        return str.join('', join_list)
-    if "200" in str(response_builder):
-        return "success"
-
-# =====================================================================================================================
-# This function is designed to take the final text, a footer, and the original query and turn it into an actual comment
-# It's designed not be dependent on knowing what API to use, as the relevant strings are passed to it instead.
+# ======================================================================================================================
 
 
-def full_comment_string(input_string, response_body, footer_input):
-    if 'error:' in input_string.lower():
-        return input_string
-    # input string is the string initially used to make the api call.
-    reconverted_query = comment_parser(input_string, available_versions())
-    final_query = str()
-    for i in reconverted_query:
-        final_query = final_query+i+' '
-    final_query = final_query.replace('.', ':').replace('+', ' ')
-    header = str(final_query+"\n \n")
-    footer = footer_input
-    final_comment = header+response_body+footer
-    return final_comment
-
-# =====================================================================================================================
-# The below functions are combining all my loose functions from above so that they can be easily used.
-# I tried to break up the functions into single tasks for each function
-# This made is easier to write than having a long imperative mess of spaghetti
-
-
-def biblia(input_string, requests_object):
-    print(str(input_string) + ' is the input object')
-    if 'error:' in input_string.lower():
-        return input_string
-    # higher level biblia function. Performs all biblia functionality and packages it neatly
-    api_call = requests_object
-    log.api_response_logger(api_call)
-    api_error_handling = api_error_handler(api_call)
-    if 'error' in api_error_handling:
-        return api_error_handling
-    biblia_body = final_biblia_response(text_creator(api_call))
-    response = full_comment_string(input_string, biblia_body, biblia_footer())
-    length_test = log.length_checker(response)
-    if 'error' in length_test:
-        return length_test
-    return response
-
-
-def esv(input_string, requests_object):
-    if 'error:' in input_string.lower():
-        return input_string
-    # higher level ESV function. Performs all ESV functionality and packages it neatly
-    api_call = requests_object
-    log.api_response_logger(api_call)
-    api_error_handling = api_error_handler(api_call)
-    if 'error' in api_error_handling:
-        return api_error_handling
-    esv_body = final_esv_response(text_creator(api_call))
-    response = full_comment_string(input_string, esv_body, esv_footer())
-    length_test = log.length_checker(response)
-    if 'error' in length_test:
-        return length_test
-    return response
-
-# =====================================================================================================================
-# the requests_object_caller creates the requests object that gets worked on further.
-# the comment and I can use the requests object for error checking since it also stores HTTP response codes
-# The query_processor takes the original input string just for some decision making on how to format comment responses
-# I probably can make it clearer by wrapping the two into a single function that just requires an input string. TODO
-
-
-def requests_object_caller(input_string):
-    print(str(input_string) + ' is the requests object')
-    if 'error:' in input_string.lower():
-        return input_string
-    api_call = "ERROR: API call not processed\n\n"
-    parsed_comment = comment_parser(input_string, available_versions())
-    parsed_comment_upper = list(map(lambda x: x.upper(), parsed_comment))
-    parsed_comment_string = str.join(' ', parsed_comment_upper)
-    print('the checked requests comment is: \n' + parsed_comment_string)
-    if "ESV" in parsed_comment_string:
-        api_call = esv_response_builder(parsed_comment, esv_api_key_storage())
-    if "ESV" not in parsed_comment_string:
-        api_call = biblia_response_builder(parsed_comment, biblia_api_key_storage())
-    if 'ERROR' in api_call:
-        return log.log_wrapper(api_call)
-    print(api_call)
+def response_builder(query_input, api_key_input): 
+    url = ["https://api.scripture.api.bible/v1/bibles/", query_input[0], "/passages/", query_input[1]]
+    querystring = {"content-type": "text",
+                   "include-notes": "false",
+                   "include-titles": "false",
+                   "include-chapter-numbers": "false",
+                   "include-verse-numbers": "true",
+                   "include-verse-spans": "false",
+                   "use-org-id": "false"}
+    headers = {'api-key':  str(api_key_input)}
+    api_call = requests.get(str.join('', url), headers=headers, params=querystring)
     return api_call
 
 
-def query_processor(input_string, requests_object):
-    print(str(input_string) + ' is the query')
-    if 'error:' in input_string.lower():
-        return input_string
-    final_query = "ERROR: Query not processed\n\n"
-    parsed_comment = comment_parser(input_string, available_versions())
-    parsed_comment_upper = list(map(lambda x: x.upper(), parsed_comment))
-    parsed_comment_string = str.join(' ', parsed_comment_upper)
-    print('the checked comment is: \n' + parsed_comment_string)
-    if 'error' in parsed_comment_string:
-        return requests_object
-    if "ESV" in parsed_comment_string:
-        final_query = esv(input_string, requests_object)
-    if "ESV" not in parsed_comment_string:
-        final_query = biblia(input_string, requests_object)
-    return final_query
+def error_code_handler(json_input_object):
+    json_input = json.loads(json_input_object.text)
+    if 'statusCode' in json_input.keys():
+        if not json_input['statusCode'] == '200':
+            json_input['copyright'] = ''
+            json_input['reference'] = ''
+            json_input['content'] = str.join('', (json_input['error'], '\n',   json_input['message']))
+            fake_data_holder = dict()
+            fake_data_holder['data'] = json_input
+            return json_input
+    else:
+        return json_input['data']
 
 
-# =====================================================================================================================
-# This catches any errors from ESV and instead calls the Lutheran insult generator.
+def footer():
+    footer_list = ["\n\n***\n",
+                   "^(this) ^(bot) ^(uses) ^(the) [^(scripture.api.bible/)](https://scripture.api.bible/)",
+                   " ^(web) ^(services) ^(from) [^(American) ^(Bible) ^(Society)](https://www.americanbible.org/)",
+                   " ^(|) [^(source code)](https://github.com/matthewdaffern/redditbot)",
+                   " ^(|) [^(message the developers)](https://www.reddit.com/message/compose?to=/r/scripturebot)"]
+    return str.join('', footer_list)
 
 
-def esv_error_catcher(input_string):
-    if ": [" in input_string:
-        join_list = [insult_generator(),
-                     '\n \n try something like ',
-                     '\n \n `u/scripture_bot``!`` ``John 3:16 KJV`',
-                     ' next time.',
-                     '\n\n***\n',
-                     ' \n \n the above insult is from the',
-                     ' [lutheran insult generator](https://ergofabulous.org/luther/insult-list.php)']
-        return str.join('', join_list)
-    if ":[" in input_string:
-        join_list = [insult_generator(),
-                     '\n \n try something like ',
-                     '\n \n `u/scripture_bot``!`` ``John 3:16 KJV`',
-                     ' next time.',
-                     '\n\n***\n',
-                     ' \n \n the above insult is from the',
-                     ' [lutheran insult generator](https://ergofabulous.org/luther/insult-list.php)']
-        return str.join('', join_list)
-    if "{" in input_string:
-        join_list = [insult_generator(),
-                     '\n \n try something like ',
-                     '\n \n `u/scripture_bot``!`` ``John 3:16 KJV`',
-                     ' next time.',
-                     '\n\n***\n',
-                     ' \n \n the above insult is from the',
-                     ' [lutheran insult generator](https://ergofabulous.org/luther/insult-list.php)']
-        return str.join('', join_list)
+def config_loader(json_input):
+    json_file = open(json_input, 'r+')
+    return json.load(json_file)
 
-def funny_response():
-	join_list = [insult_generator(),
-                 '\n \n try something like ',
-                 '\n \n `u/scripture_bot``!`` ``John 3:16 KJV`',
-                 ' next time.',
-                 '\n\n***\n',
-                 ' \n \n the above insult is from the',
-                 ' [lutheran insult generator](https://ergofabulous.org/luther/insult-list.php)']
-	return str.join('', join_list)	
-		
-		
-		
-def insult_generator():
-    import random
+
+def full_response_creator(input_string, api_key_input):
+    configured_response = partial(response_builder, api_key_input=api_key_input)
+    return comment_creator(error_code_handler(configured_response(query_input=query_transformer(input_string))))
+
+
+def rest_text_to_json_list(response_json_input):
+    json_object = json.loads(response_json_input.text)
+    return json_object['data']
+
+
+def comment_creator(json_input):
+    return str.join('', (json_input['reference'],
+                         '\n\n', json_input['content'],
+                         '\n\n', json_input['copyright'],
+                         '"\n\n***\n"'))
+
+
+def add_footer(content, dev_footer):
+    return str.join('', (content, '"\n\n***\n"', dev_footer))
+# ======================================================================================================================
+# this is where you map your API calls over your valid list of queries.
+
+
+def return_verse_sections(input_string, api_key_input):
+    verse_list = reference_iterator(input_string)
+    comment_creator_partial = partial(full_response_creator, api_key_input=api_key_input)
+    comment_results = list(map(lambda x: comment_creator_partial(input_string=x), verse_list))
+    return str.join('', (comment_results + [footer()]))
+
+
+def section_too_long(processed_comment):
+    if len(processed_comment) > 8000:
+        return str.join('', ('Your query exceeds 8000 characters', '"\n\n***\n"', footer()))
+    else: 
+        return processed_comment
+
+# Rest API format is:
+# "https://api.scripture.api.bible/v1/bibles/#bibleID/verses/Luk.24.2"
+# I should create a dict with the bibles I intend to support. The verse code is fairly easy,
+# I just need to use another dict.
+
+# url = "https://api.scripture.api.bible/v1/bibles/bible_id/passages/Luk.12.12-Luk.12.14" workable format.
+
+# ======================================================================================================================
+
+
+def insult_generator(input_string, api_key_input):
     chosen_one = random.randint(0, 261)
     full_list = list(["You live like simple cattle or irrational pigs and, despite the fact that the gospel has returned, have mastered the fine art of misusing all your freedom.You shameful gluttons and servants of your bellies are better suited to be swineherds and keepers of dogs.",
     "You deserve not only to be given no food to eat, but also to have the dogs set upon you and to be pelted with horse manure.",
@@ -737,4 +508,34 @@ def insult_generator():
     "We should roundly denounce you, the devil's messengers, as rascals, villains, poisonous evil worms. Or, even if you were good friends of ours, we should denounce you as mad fools and stupid persons.",
     "You stinkmouths.",
     "You are the biggest fool on earth."])
-    return full_list[chosen_one]
+    return str.join('',[full_list[chosen_one],
+                        ' \n \n the above insult is from the',
+                        ' [lutheran insult generator](https://ergofabulous.org/luther/insult-list.php)'])
+
+
+# ======================================================================================================================
+
+
+def no_swearing(input_string):
+    list_of_patterns = [' f.c.* ',
+                        ' s.i.* ',
+                        ' ass.* ',
+                        ' d..k.* ',
+                        ' b..ch.* ',
+                        ' n.*gg.* ',
+                        ' p.s.y* ']
+    for i in list_of_patterns:
+        if re.match(i, input_string) is not None:
+            return "No Swearing please"
+    return input_string
+
+
+def repeat_after_me(input_string_object, api_key_input):
+    input_string = input_string_object.replace('cowsays','')
+    return str.join('', ['Cow Says\n\n',
+                         no_swearing(input_string),
+                         '\n \n MOOO MY DEVELOPER SUCKS AT ASCII ART',
+                         '\n\n***\n',
+                         'this is a reference to the linux command cowsay.\n',
+                         'for more information please use `man cowsay` at your terminal']
+                    )  
