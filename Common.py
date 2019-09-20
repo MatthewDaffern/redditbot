@@ -8,17 +8,21 @@ import versions_dict
 
 
 def command_options():
+    """available regex options for non-default commands"""
     commands = ['.*look up.*',
                 '.*hurt my feelings.*',
-                '.*cow says.*']
+                '.*cowsays.*',
+                '.*order corn.*']
     return commands
 
 
 def command_list():
+    """command list. these are the default available commands."""
     return dict([(0, return_verse_sections),
                  (1, insult_generator),
                  (2, repeat_after_me),
-                 (3, default_command)])
+                 (3, order_corn),
+                 (4, default_command)])
 
 
 def command_processor(input_string, api_key_input):
@@ -27,25 +31,39 @@ def command_processor(input_string, api_key_input):
     picked_command = str()
     for i in patterns:
         if re.match(i, input_string) is not None:
-            print(re.match(i, input_string))
             picked_command = patterns.index(i)
             break
         else:
-            picked_command = 3
+            picked_command = 4
     return commands[picked_command](input_string, api_key_input)
 
 # ======================================================================================================================
+
+
+def order_corn(input_string, api_key):
+    return "Nah. I don't want to. /u/AutoModerator, please order corn for me. I'm too lazy to do it at this point."
+
+
 def default_command(input_string, api_key):
-    return 'MALFORMED COMMAND. PLEASE TRY AGAIN. \n the valid commands are: \n hurt my feelings: gives you a luther insult \n look up [John 3:16 KJV]: gives you a bible reference \n cowsays: repeats after you'
+    """Needs no explanation. Just explains."""
+    return str.join('', ('MALFORMED COMMAND. PLEASE TRY AGAIN.',
+                         '\n\n the valid commands are: ',
+                         '\n\n hurt my feelings: gives you a luther insult ',
+                         '\n\n look up [John 3:16 KJV]: gives you a bible reference',
+                         '\n\n cowsays: repeats after you',
+                         '\n\n order corn: scripture_bot orders corn for you. Use for twice the corn power'))
+
 
 def verse_slice(input_string):
+    """This is the regex pattern that I hit on during testing for grabbing verse sections. Note that finditer is used
+       I have no idea why it works best, but it's the only solution."""
     pattern = '\[.{0,15}:.{0,10}\]'
     match = re.finditer(pattern, input_string)
     return list(map(lambda x: x.group(0), list(match)))
 
 
 def neatify_string_to_list(input_string):
-    print(str.encode(input_string))
+    """Gets me my actual list of items to query"""
     clean_brackets = input_string.replace('[', '')\
                                  .replace(']', '')
     return clean_brackets.split(' ')
@@ -70,8 +88,9 @@ curl --request GET \
 
 
 def versions_transformer(query_input, versions_dict_input):
+    """Grabs the version and casts it to a list"""
+    processed_query = query_input.upper()
     for i in list(versions_dict_input.keys()):
-        processed_query = query_input.upper()
         result = re.search(i, processed_query)
         if result is not None:
             version = versions_dict_input[result.group(0)]
@@ -83,6 +102,7 @@ def versions_transformer(query_input, versions_dict_input):
 
 
 def book_transformer(query_input, book_dict_input):
+    """grabs the book and casts it to a list"""
     sample_version = versions_dict.versions_dict()
     query_input[1] = query_input[1].replace('[', '').replace(']', '').lstrip().rstrip().upper()
     for i in list(book_dict_input.keys()):
@@ -95,7 +115,7 @@ def book_transformer(query_input, book_dict_input):
 
 
 def verse_transformer(query_input):
-    print(query_input)
+    """creates the compliant verse reference"""
     if query_input[1] == 'error book not found':
         query_input[1] = query_input[1].replace(' ', ".")
         return query_input
@@ -113,6 +133,7 @@ def verse_transformer(query_input):
 
 
 def query_transformer(input_string):
+    """QUERY CURRY"""
     versions = versions_dict.versions_dict()
     books = books_dict.books_dict()
     versions_transformer_partial = partial(versions_transformer, versions_dict_input=versions)
@@ -124,40 +145,13 @@ def query_transformer(input_string):
                              )
 
 
-'''
-
-
-def verse_transformer(query_input):
-    internal_query = query_input
-    verse = internal_query[1]
-    if ':' in verse:
-        verse = verse.split(':')  
-        if '-' in verse[1]:
-            passage = verse[1].split('-')
-            verse = str.join('', (internal_query[0], '.',
-                                  verse[0], '.',
-                                  passage[0], '-',
-                                  internal_query[0], '.',
-                                  verse[0], '.',
-                                  passage[1]))
-        else:
-            verse = str.join('', (internal_query[0], '.',
-                                  verse[0], '.',
-                                  verse[1]))
-        return [internal_query[2], verse]
-    else:
-        internal_query[2] = 'malformed verse request'
-        return internal_query
-'''
 # ======================================================================================================================
-
-
-
 
 # ======================================================================================================================
 
 
-def response_builder(query_input, api_key_input): 
+def response_builder(query_input, api_key_input):
+    """Makes the actual request"""
     url = ["https://api.scripture.api.bible/v1/bibles/", query_input[0], "/passages/", query_input[1]]
     querystring = {"content-type": "text",
                    "include-notes": "false",
@@ -172,12 +166,14 @@ def response_builder(query_input, api_key_input):
 
 
 def error_code_handler(json_input_object):
+    """I pass everything as a response now, so I technically produce only valid responses.
+       This will work later down the way so when the response is compiled, it's a formatted error message."""
     json_input = json.loads(json_input_object.text)
     if 'statusCode' in json_input.keys():
         if not json_input['statusCode'] == '200':
-            json_input['copyright'] = ''
-            json_input['reference'] = ''
-            json_input['content'] = str.join('', (json_input['error'], '\n',   json_input['message']))
+            json_input['copyright'] = 'Malformed Request'
+            json_input['reference'] = 'Malformed Request'
+            json_input['content'] = str.join('', (json_input['error'], ':', '\n\n',   json_input['message']))
             fake_data_holder = dict()
             fake_data_holder['data'] = json_input
             return json_input
@@ -186,8 +182,8 @@ def error_code_handler(json_input_object):
 
 
 def footer():
-    footer_list = ["\n\n***\n",
-                   "^(this) ^(bot) ^(uses) ^(the) [^(scripture.api.bible/)](https://scripture.api.bible/)",
+    """feets"""
+    footer_list = ["^(this) ^(bot) ^(uses) ^(the) [^(scripture.api.bible)](https://scripture.api.bible/)",
                    " ^(web) ^(services) ^(from) [^(American) ^(Bible) ^(Society)](https://www.americanbible.org/)",
                    " ^(|) [^(source code)](https://github.com/matthewdaffern/redditbot)",
                    " ^(|) [^(message the developers)](https://www.reddit.com/message/compose?to=/r/scripturebot)"]
@@ -195,45 +191,64 @@ def footer():
 
 
 def config_loader(json_input):
+    """generic json parsers"""
     json_file = open(json_input, 'r+')
     return json.load(json_file)
 
 
 def full_response_creator(input_string, api_key_input):
+    """creates the response by currying everything"""
     configured_response = partial(response_builder, api_key_input=api_key_input)
     return comment_creator(error_code_handler(configured_response(query_input=query_transformer(input_string))))
 
 
 def rest_text_to_json_list(response_json_input):
+    """removes that pesky 'data' object label"""
     json_object = json.loads(response_json_input.text)
     return json_object['data']
 
 
+def make_the_copyright_tinier(string_input):
+    return string_input.replace(' ', ' ^^^')
+
+
 def comment_creator(json_input):
-    return str.join('', (json_input['reference'],
-                         '\n\n', json_input['content'],
-                         '\n\n', json_input['copyright'],
-                         '"\n\n***\n"'))
+    """ references the required elements from the dictionary object that's always passed around.
+        Note I just need to create the respective keys, and it'll work well."""
+    return str.join('', ('*',
+                         json_input['reference'],
+                         '*'
+                         '\n***\n',
+                         json_input['content'],
+                         '\n***\n',
+                         make_the_copyright_tinier(str("\n\n\n\n\n\n\n" +
+                                                       "^^^" + json_input['copyright']))))
 
 
 def add_footer(content, dev_footer):
-    return str.join('', (content, '"\n\n***\n"', dev_footer))
+    return str.join('', (content,  dev_footer))
 # ======================================================================================================================
 # this is where you map your API calls over your valid list of queries.
+
+
+def section_too_long(processed_comment):
+    if len(processed_comment) > 8000:
+        return str.join('', ('Your query exceeds 8000 characters', '\n***\n', footer()))
+    else:
+        return processed_comment
+
+
+def remove_quad_spaces(processed_comment):
+    return processed_comment.replace('    ', '')
 
 
 def return_verse_sections(input_string, api_key_input):
     verse_list = reference_iterator(input_string)
     comment_creator_partial = partial(full_response_creator, api_key_input=api_key_input)
     comment_results = list(map(lambda x: comment_creator_partial(input_string=x), verse_list))
-    return str.join('', (comment_results + [footer()]))
+    return section_too_long(remove_quad_spaces(str.join('\n\n&nbsp;\n\n&nbsp;\n\n***\n', (comment_results + [footer()]))))
 
 
-def section_too_long(processed_comment):
-    if len(processed_comment) > 8000:
-        return str.join('', ('Your query exceeds 8000 characters', '"\n\n***\n"', footer()))
-    else: 
-        return processed_comment
 
 # Rest API format is:
 # "https://api.scripture.api.bible/v1/bibles/#bibleID/verses/Luk.24.2"
@@ -246,6 +261,7 @@ def section_too_long(processed_comment):
 
 
 def insult_generator(input_string, api_key_input):
+    """generates lutheran insults."""
     chosen_one = random.randint(0, 261)
     full_list = list(["You live like simple cattle or irrational pigs and, despite the fact that the gospel has returned, have mastered the fine art of misusing all your freedom.You shameful gluttons and servants of your bellies are better suited to be swineherds and keepers of dogs.",
     "You deserve not only to be given no food to eat, but also to have the dogs set upon you and to be pelted with horse manure.",
@@ -508,7 +524,8 @@ def insult_generator(input_string, api_key_input):
     "We should roundly denounce you, the devil's messengers, as rascals, villains, poisonous evil worms. Or, even if you were good friends of ours, we should denounce you as mad fools and stupid persons.",
     "You stinkmouths.",
     "You are the biggest fool on earth."])
-    return str.join('',[full_list[chosen_one],
+    return str.join('', [full_list[chosen_one],
+                        '\n\n***\n',
                         ' \n \n the above insult is from the',
                         ' [lutheran insult generator](https://ergofabulous.org/luther/insult-list.php)'])
 
@@ -531,11 +548,12 @@ def no_swearing(input_string):
 
 
 def repeat_after_me(input_string_object, api_key_input):
-    input_string = input_string_object.replace('cowsays','')
-    return str.join('', ['Cow Says\n\n',
+    input_string = input_string_object.replace('/u/scripture_bot cowsays ', '')
+    return str.join('', ['cowsays\n\n',
+                         '\n***\n',
                          no_swearing(input_string),
                          '\n \n MOOO MY DEVELOPER SUCKS AT ASCII ART',
-                         '\n\n***\n',
+                         '\n***\n',
                          'this is a reference to the linux command cowsay.\n',
                          'for more information please use `man cowsay` at your terminal']
                     )  
