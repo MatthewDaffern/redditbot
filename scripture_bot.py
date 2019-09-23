@@ -46,7 +46,6 @@ def reply_handling(comment_id, api, reddit_object):
     result = command_processor(comment_id.body, api)
     unread_comment.reply(result)
     log_to_cloud_watch_output(comment_id, result)
-    comment_id.mark_read()
     comment_id.save()
     return None
 
@@ -63,7 +62,14 @@ def reply_function(comment_id_input, api_input, reddit_object_input):
 
 
 def reddit_comment_author_filter(reddit_comment_input):
-    if 'I_need_to_argue' == str(reddit_comment_input.author):
+    if 'AutoModerator' == str(reddit_comment_input.author):
+        return False
+    else:
+        return True
+
+
+def proper_comment_filter(reddit_comment_input):
+    if 'scripture_bot' not in reddit_comment_input.body:
         return False
     else:
         return True
@@ -73,7 +79,10 @@ def list_creator(reddit_object_input):
     """Instead of iterating using a for loop, this creates a list of unreplied to comments. Quicker tbh."""
     unread = set(reddit_object_input.inbox.unread(limit=None))
     saved = set(reddit_object_input.redditor('scripture_bot').saved(limit=10))
-    return list(filter(reddit_comment_author_filter, [x for x in unread if x not in saved]))
+    resultant_list = list(filter(reddit_comment_author_filter, [x for x in unread if x not in saved]))
+    filter_out_accidental_comments = list(filter(proper_comment_filter, resultant_list))
+    reddit_object_input.inbox.mark_read(unread)
+    return filter_out_accidental_comments
 
 
 def main():

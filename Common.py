@@ -30,7 +30,7 @@ def command_processor(input_string, api_key_input):
     commands = command_list()
     picked_command = str()
     for i in patterns:
-        if re.match(i, input_string) is not None:
+        if re.search(i, input_string) is not None:
             picked_command = patterns.index(i)
             break
         else:
@@ -51,7 +51,7 @@ def default_command(input_string, api_key):
                          '\n\n hurt my feelings: gives you a luther insult ',
                          '\n\n look up [John 3:16 KJV]: gives you a bible reference',
                          '\n\n cowsays: repeats after you',
-                         '\n\n order corn: scripture_bot orders corn for you. Use for twice the corn power'))
+                         '\n\n orden de maiz. See Automoderator for this feature. use for twice the corn power'))
 
 
 def verse_slice(input_string):
@@ -247,8 +247,6 @@ def return_verse_sections(input_string, api_key_input):
     comment_creator_partial = partial(full_response_creator, api_key_input=api_key_input)
     comment_results = list(map(lambda x: comment_creator_partial(input_string=x), verse_list))
     return section_too_long(remove_quad_spaces(str.join('\n\n&nbsp;\n\n&nbsp;\n\n***\n', (comment_results + [footer()]))))
-
-
 
 # Rest API format is:
 # "https://api.scripture.api.bible/v1/bibles/#bibleID/verses/Luk.24.2"
@@ -542,18 +540,33 @@ def no_swearing(input_string):
                         ' n.*gg.* ',
                         ' p.s.y* ']
     for i in list_of_patterns:
-        if re.match(i, input_string) is not None:
+        if re.search(i, input_string) is not None:
             return "No Swearing please"
     return input_string
 
 
 def repeat_after_me(input_string_object, api_key_input):
-    input_string = input_string_object.replace('/u/scripture_bot cowsays ', '')
-    return str.join('', ['cowsays\n\n',
-                         '\n***\n',
-                         no_swearing(input_string),
-                         '\n \n MOOO MY DEVELOPER SUCKS AT ASCII ART',
-                         '\n***\n',
-                         'this is a reference to the linux command cowsay.\n',
-                         'for more information please use `man cowsay` at your terminal']
-                    )  
+    message = str.join('', ('|  ', no_swearing(input_string_object), '|  '))
+    message = message.replace('/', '')\
+                     .replace('uscripture_bot', '')\
+                     .replace('cow', '')\
+                     .replace('say', '')\
+                     .replace('says', '')\
+                     .replace(':', '')
+    border = len(message) * '-'
+    return str.join('    ', ['cowsays\n\n',
+                             '\n***\n',
+                             border,
+                             message,
+                             border,
+                             'O\n\n',
+                             ' O ^ __ ^\n\n',
+                             '   o(oo)\_______\n\n',
+                             '    (__)\       )\ / \\n\n',
+                             '      | | ----w |\n\n',
+                             '      | |     | |\n\n',
+                             '\n***\n',
+                             'this is a reference to the linux command cowsay.\n'])
+
+
+
