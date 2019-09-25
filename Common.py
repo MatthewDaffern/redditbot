@@ -11,7 +11,7 @@ def command_options():
     """available regex options for non-default commands"""
     commands = ['.*look up.*',
                 '.*hurt my feelings.*',
-                '.*cowsays.*',
+                '.*cowsay.*',
                 '.*order corn.*']
     return commands
 
@@ -50,7 +50,7 @@ def default_command(input_string, api_key):
                          '\n\n the valid commands are: ',
                          '\n\n hurt my feelings: gives you a luther insult ',
                          '\n\n look up [John 3:16 KJV]: gives you a bible reference',
-                         '\n\n cowsays: repeats after you',
+                         '\n\n cowsay: repeats after you',
                          '\n\n orden de maiz. See Automoderator for this feature. use for twice the corn power'))
 
 
@@ -91,7 +91,7 @@ def versions_transformer(query_input, versions_dict_input):
     """Grabs the version and casts it to a list"""
     processed_query = query_input.upper()
     for i in list(versions_dict_input.keys()):
-        result = re.search(i, processed_query)
+        result = re.search(str(i + '[^\w]'), processed_query)
         if result is not None:
             version = versions_dict_input[result.group(0)]
             reduced_query = processed_query.replace(result.group(0), '')
@@ -172,7 +172,11 @@ def error_code_handler(json_input_object):
     if 'statusCode' in json_input.keys():
         if not json_input['statusCode'] == '200':
             json_input['copyright'] = 'Malformed Request'
-            json_input['reference'] = 'Malformed Request'
+            json_input['reference'] = str.join('', ('if you are seeing this, You have made a malformed request. \n\n' ,
+                                                    'Please carefully note that you have picked a book and version that is accessible, as well as forming the request correctly. \n\n' ,
+                                                    "simply mention this bot's username, and state look up somewhere in your comment. \n\n" ,
+                                                    "Then you can specify as many verse selections under the 8000 character limit\n\n" ,
+                                                    "like this: [John 3:16 KJV]"))
             json_input['content'] = str.join('', (json_input['error'], ':', '\n\n',   json_input['message']))
             fake_data_holder = dict()
             fake_data_holder['data'] = json_input
@@ -546,7 +550,7 @@ def no_swearing(input_string):
 
 
 def repeat_after_me(input_string_object, api_key_input):
-    message = str.join('', ('|  ', no_swearing(input_string_object), '|  '))
+    message = str.join('', ('|  ', no_swearing(input_string_object), '  |'))
     message = message.replace('/', '')\
                      .replace('uscripture_bot', '')\
                      .replace('cow', '')\
@@ -557,8 +561,11 @@ def repeat_after_me(input_string_object, api_key_input):
     return str.join('    ', ['cowsays\n\n',
                              '\n***\n',
                              border,
+                             '\n',
                              message,
+                             '\n',
                              border,
+                             '\n\n'
                              'O\n\n',
                              ' O ^ __ ^\n\n',
                              '   o(oo)\_______\n\n',

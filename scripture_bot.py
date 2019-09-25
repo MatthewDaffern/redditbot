@@ -81,13 +81,12 @@ def list_creator(reddit_object_input):
     saved = set(reddit_object_input.redditor('scripture_bot').saved(limit=10))
     resultant_list = list(filter(reddit_comment_author_filter, [x for x in unread if x not in saved]))
     filter_out_accidental_comments = list(filter(proper_comment_filter, resultant_list))
-    reddit_object_input.inbox.mark_read(unread)
+    reddit_object_input.inbox.mark_read(list(unread))
     return filter_out_accidental_comments
 
 
 def main():
     reddit_object = authenticate()
-    print(reddit_object)
     configured_processor = functools.partial(reply_function, api_input=api(), reddit_object_input=reddit_object)
     # map reply to list of comments, and use your partials to simplify your parameters.
     list(map(lambda x: configured_processor(comment_id_input=x), list_creator(reddit_object)))
@@ -96,6 +95,6 @@ def main():
 if __name__ == '__main__':
     while True:
         main()
-        sleep(100)
+        sleep(5)
 
 
