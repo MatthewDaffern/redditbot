@@ -1,0 +1,6 @@
+oo429ccb5a2be3892edb5000d1aee4b8ea
+
+
+curl --request GET \
+--url https://api.scripture.api.bible/v1/bibles \
+--header 'api-key: 429ccb5a2be3892edb5000d1aee4b8ea'

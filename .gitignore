@@ -1,9 +1,4 @@
-/__pycache__
-/__MACOSX
-.idea
-.git
-curl_example.txt
-bibles.json
-chapters.json
-*_dict.py
+scripture_bot_cfn.json
 api.key
+setup.cfg
+authenticator.py

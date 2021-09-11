@@ -1,7 +1,6 @@
 from Common import *
 from authenticator import authenticate
 import functools
-import re
 import datetime
 from time import sleep
 import API_keys
@@ -37,13 +36,13 @@ def fullname_creator(comment_object):
     return final_fullname
 
 
-def reply_handling(comment_id, api, reddit_object):
+def reply_handling(comment_id, api_key, reddit_object):
     """Does the heave lifting for logging and responding."""
     comment_id.mark_read()
     # If you don't mark read before, it'll reply twice.
     comment_id_string = fullname_creator(comment_id)
     unread_comment = reddit_object.comment(id=comment_id_string)
-    result = command_processor(comment_id.body, api)
+    result = command_processor(comment_id.body, api_key)
     unread_comment.reply(result)
     log_to_cloud_watch_output(comment_id, result)
     comment_id.save()
@@ -52,11 +51,6 @@ def reply_handling(comment_id, api, reddit_object):
 
 def reply_function(comment_id_input, api_input, reddit_object_input):
     """Handles all of the reply functions. Iterates through the list of commands"""
-    for i in command_options():
-        log_to_cloud_watch_input(comment_id_input)
-        if re.match(i, comment_id_input.body) is not None:
-            reply_handling(comment_id_input, api_input, reddit_object_input)
-            return None
     reply_handling(comment_id_input, api_input, reddit_object_input)
     return 'No command found'
 
@@ -76,7 +70,7 @@ def proper_comment_filter(reddit_comment_input):
 
 
 def list_creator(reddit_object_input):
-    """Instead of iterating using a for loop, this creates a list of unreplied to comments. Quicker tbh."""
+    """Instead of iterating using a for loop, this creates a list of unprocessed comments. Quicker tbh."""
     unread = set(reddit_object_input.inbox.unread(limit=None))
     saved = set(reddit_object_input.redditor('scripture_bot').saved(limit=10))
     resultant_list = list(filter(reddit_comment_author_filter, [x for x in unread if x not in saved]))
@@ -95,6 +89,4 @@ def main():
 if __name__ == '__main__':
     while True:
         main()
-        sleep(5)
-
-
+        "sleep(5)"
